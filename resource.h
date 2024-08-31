@@ -7,6 +7,7 @@
 #define IDS_ABOUTBOX                    101
 #define IDD_MFC_IMAGEPROCESSING_DIALOG  102
 #define IDR_MAINFRAME                   128
+#define IDD_TEXT_INPUT_DIALOG           132
 #define IDC_OPEN_EDIT                   1000
 #define IDC_OPEN_BUTTON                 1001
 #define IDC_SAVE_BUTTON                 1002
@@ -19,14 +20,21 @@
 #define IDC_HEIGHT_EDIT                 1011
 #define IDC_EDIT2                       1012
 #define IDC_WIDTH_EDIT                  1012
+#define IDC_BUTTON_TEXT                 1014
+#define IDCANCEL                        1015
+#define IDC_EDIT_TEXT                   1016
+#define IDC_SLIDER_SIZE                 1017
+#define IDC_SLIDER_G                    1018
+#define IDC_SLIDER_R                    1019
+#define IDC_SLIDER_B                    1020
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        130
+#define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1012
+#define _APS_NEXT_CONTROL_VALUE         1019
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
