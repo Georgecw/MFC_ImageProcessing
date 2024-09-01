@@ -7,6 +7,8 @@
 #include "MFC_ImageProcessing.h"
 #include "MFC_ImageProcessingDlg.h"
 #include "afxdialogex.h"
+#include "CTextInputDialog.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -76,6 +78,9 @@ BEGIN_MESSAGE_MAP(CMFCImageProcessingDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BLUR_BUTTON, &CMFCImageProcessingDlg::OnClickedBlurButton)
 	ON_BN_CLICKED(IDC_SHARP_BUTTON, &CMFCImageProcessingDlg::OnClickedSharpButton)
 	ON_BN_CLICKED(IDC_SCALE_BUTTON, &CMFCImageProcessingDlg::OnClickedScaleButton)
+	ON_BN_CLICKED(IDC_BUTTON_TEXT, &CMFCImageProcessingDlg::OnBnClickedTextButton)
+	ON_WM_LBUTTONDOWN()
+	
 END_MESSAGE_MAP()
 
 
@@ -111,6 +116,7 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -150,9 +156,14 @@ void CMFCImageProcessingDlg::OnPaint()
 
 		// 绘制图标
 		dc.DrawIcon(x, y, m_hIcon);
+
+		
 	}
 	else
 	{
+		
+		
+		
 		CDialogEx::OnPaint();
 	}
 }
@@ -318,17 +329,61 @@ void CMFCImageProcessingDlg::Mat2Bmp(cv::Mat img, int height, int width)
 }
 
 
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
+
+int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
+{
+	UINT num = 0;
+	UINT size = 0;
+
+	Gdiplus::GetImageEncodersSize(&num, &size);
+	if (size == 0) return -1;
+
+	Gdiplus::ImageCodecInfo* pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
+	if (pImageCodecInfo == nullptr) return -1;
+
+	Gdiplus::GetImageEncoders(num, size, pImageCodecInfo);
+
+	for (UINT j = 0; j < num; ++j)
+	{
+		if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
+		{
+			*pClsid = pImageCodecInfo[j].Clsid;
+			free(pImageCodecInfo);
+			return j;
+		}
+	}
+
+	free(pImageCodecInfo);
+	return -1;
+}
+
+void ConvertToBMP(const CString& inputPath, const CString& outputPath)
+{
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
+	Gdiplus::Image image(inputPath);
+	CLSID bmpClsid;
+	GetEncoderClsid(L"image/bmp", &bmpClsid);
+	image.Save(outputPath, &bmpClsid, nullptr);
+
+	//Gdiplus::GdiplusShutdown(gdiplusToken);
+}
+
 // 控件函数
 void CMFCImageProcessingDlg::OnClickedOpenButton()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	// 设置过滤器
-	LPCTSTR szFilter = _T("bmp (*.bmp)|*.bmp|");
+	LPCTSTR szFilter = _T("Image Files (*.bmp;*.jpg;*.jpeg;*.png)|*.bmp;*.jpg;*.jpeg;*.png|");
 
 	// 构造打开文件对话框
-	CFileDialog fileDlg(TRUE, _T(".bmp"), NULL, 
+	CFileDialog fileDlg(TRUE, _T(".bmp"), NULL,
 		OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, szFilter, this);
-	CString FilePath;
+	
+
 
 	// 显示打开文件对话框
 	if (IDOK == fileDlg.DoModal())
@@ -336,14 +391,13 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 		FilePath = fileDlg.GetPathName(); // 获取文件路径
 		SetDlgItemText(IDC_OPEN_EDIT, FilePath); // 在编辑框显示文件路径
 
-		// 打开对话框获取图像信息
-		CString BmpName = fileDlg.GetPathName();     //获取文件路径名   如D:\pic\abc.bmp
-		CString EntName = fileDlg.GetFileExt();      //获取文件扩展名
-		EntName.MakeLower();                     //将文件扩展名转换为一个小写字符
+		CString BmpName = fileDlg.GetPathName();
+		CString EntName = fileDlg.GetFileExt();
+		EntName.MakeLower();
 
 		if (EntName.Compare(_T("bmp")) == 0)
 		{
-			// 以只读的方式打开文件 读取bmp图片各部分 bmp文件头 信息 数据
+			// 读取并显示 BMP 文件
 			if (!bmpFile.Open(BmpName, CFile::modeRead | CFile::typeBinary))
 				return;
 			if (bmpFile.Read(&bmpHeader, sizeof(BITMAPFILEHEADER)) != sizeof(BITMAPFILEHEADER))
@@ -352,20 +406,123 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 				return;
 			pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
-			// 为图像数据申请空间
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
 			DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
 			pBmpData = new BYTE[Bytes];
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
 
-			// 显示位图
 			Show_Bmp();
+			m_is_open = true;
+		}
+		else if (EntName.Compare(_T("jpg")) == 0 || EntName.Compare(_T("jpeg")) == 0 || EntName.Compare(_T("png")) == 0)
+		{
+			// 将 JPG/PNG 文件转换为 BMP 并读取
+			CString tempBmpPath = FilePath.Left(FilePath.ReverseFind('.')) + _T(".bmp");
+			ConvertToBMP(FilePath, tempBmpPath);
+
+			if (!bmpFile.Open(tempBmpPath, CFile::modeRead | CFile::typeBinary))
+				return;
+			if (bmpFile.Read(&bmpHeader, sizeof(BITMAPFILEHEADER)) != sizeof(BITMAPFILEHEADER))
+				return;
+			if (bmpFile.Read(&bmpInfo, sizeof(BITMAPINFOHEADER)) != sizeof(BITMAPINFOHEADER))
+				return;
+			pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
+
+			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
+			DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
+			pBmpData = new BYTE[Bytes];
+			bmpFile.Read(pBmpData, Bytes);
+			bmpFile.Close();
+
+			Show_Bmp();
+			m_is_open = true;
 		}
 	}
-
-
 }
+
+
+
+
+
+void CMFCImageProcessingDlg::CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath)
+{
+	// 创建内存 DC
+	CDC memDC;
+	memDC.CreateCompatibleDC(nullptr);
+
+	// 创建透明背景的位图
+	CBitmap bitmap;
+	bitmap.CreateCompatibleBitmap(&memDC, bmpInfo.biWidth, bmpInfo.biHeight);
+	CBitmap* pOldBitmap = memDC.SelectObject(&bitmap);
+
+	// 创建一个透明背景的画刷
+	CBrush brush(RGB(255, 255, 255)); // 白色背景
+	memDC.FillRect(CRect(0, 0, bmpInfo.biWidth, bmpInfo.biHeight), &brush);
+
+	// 创建字体
+	CFont font;
+	font.CreatePointFont(m_font_size, _T("Arial"));
+	CFont* pOldFont = memDC.SelectObject(&font);
+
+	// 设置文本颜色
+	memDC.SetTextColor(m_font_col);
+	memDC.SetBkMode(TRANSPARENT); // 透明背景
+
+	// 绘制文本
+	memDC.DrawText(text, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	// 恢复原来的对象
+	memDC.SelectObject(pOldFont);
+	memDC.SelectObject(pOldBitmap);
+
+	// 保存文本图像
+	CImage image;
+	image.Create(bmpInfo.biWidth, bmpInfo.biHeight, 24); // 24 位颜色深度
+	HDC hdc = image.GetDC();
+	memDC.BitBlt(0, 0, bmpInfo.biWidth, bmpInfo.biHeight, &memDC, 0, 0, SRCCOPY);
+	image.ReleaseDC();
+	image.Save(textImagePath); // 保存为 BMP 文件
+}
+
+
+#include <opencv2/opencv.hpp>
+#include<cstring>
+
+
+void OverlayTextOnImage(std::string& imagePath, const std::string& textImagePath, const std::string& outputPath)
+{
+	// 读取原始图像
+	cv::Mat image = cv::imread(imagePath, cv::IMREAD_COLOR);
+	if (image.empty())
+	{
+		std::cerr << "无法读取原始图像" << std::endl;
+		return;
+	}
+
+	// 读取文本图像
+	cv::Mat textImage = cv::imread(textImagePath, cv::IMREAD_UNCHANGED);
+	if (textImage.empty())
+	{
+		std::cerr << "无法读取文本图像" << std::endl;
+		return;
+	}
+
+	// 确保文本图像有 alpha 通道
+	if (textImage.channels() == 3)
+	{
+		cv::cvtColor(textImage, textImage, cv::COLOR_BGR2BGRA);
+	}
+
+	// 叠加图像
+	cv::Mat result;
+	cv::addWeighted(image, 1.0, textImage, 1.0, 0.0, result);
+
+	// 保存叠加后的图像
+	cv::imwrite(outputPath, result);
+}
+
+
 
 
 void CMFCImageProcessingDlg::OnClickedSaveButton()
@@ -380,8 +537,13 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 	fileDlg.m_ofn.lpstrTitle = _T("保存");  // 保存对话窗口标题名
 	CString FilePath;
 
+	if (m_is_open == false) {
+		AfxMessageBox(_T("没有打开文件，无法保存"));
+		return;
+	}
+
 	// 显示保存文件对话框
-	if (IDOK == fileDlg.DoModal())
+	if (IDOK == fileDlg.DoModal())  //判断是否点击了确定
 	{
 		FilePath = fileDlg.GetPathName();  // 获取文件路径
 		SetDlgItemText(IDC_SAVE_EDIT, FilePath);
@@ -393,6 +555,13 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 			return;
 		}
 
+		CString textImagePath = _T("textImage.bmp");
+		CreateTextImage(m_text, m_textRect, textImagePath);
+		std::string ori_pic_path = CT2A(FilePath.GetString());
+		
+		// 使用 OpenCV 叠加文本到原图上
+		OverlayTextOnImage(ori_pic_path, "textImage.bmp", "finalImage.bmp");
+		/*
 		// 写入文件头
 		bmpFile.Write(&bmpHeader, sizeof(BITMAPFILEHEADER));
 
@@ -412,9 +581,9 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 
 		// 关闭文件
 		bmpFile.Close();
+		*/
 	}
 }
-
 
 void CMFCImageProcessingDlg::OnClickedRotation()
 {
@@ -551,4 +720,87 @@ void CMFCImageProcessingDlg::OnClickedScaleButton()
 
 	// 4. 显示图像
 	Show_Bmp(m_Scale_Height, m_Scale_Width);
+}
+
+
+void CMFCImageProcessingDlg::OnBnClickedTextButton()
+{
+	m_is_text = true;
+	
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+
+
+void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_is_text == true) {
+		CTextInputDialog dlg;
+		if (dlg.DoModal() == IDOK)  // 显示对话框并等待用户输入
+		{
+			m_text = dlg.GetInputText();  // 获取用户输入的文本
+			m_font_size = dlg.GetFontSize(); //获取字体大小
+			m_font_col = dlg.GetFontCol();  //获取字体颜色
+
+			// 获取图片控件的指针
+			CWnd* pWnd = GetDlgItem(IDC_STATIC_PIC);
+
+			// 获取图片控件在屏幕上的矩形区域
+			CRect picRect;
+			pWnd->GetWindowRect(&picRect);
+
+			// 将鼠标点击点从主窗口坐标转换为屏幕坐标
+			ClientToScreen(&point);
+
+			// 检查点击点是否在图片控件内部
+			if (picRect.PtInRect(point)) {
+				// 用户定义文本框的位置，可以改为动态捕获鼠标位置
+				// 
+				// 将屏幕坐标转换为图片控件的客户区坐标
+				pWnd->ScreenToClient(&point);
+
+				// 创建字体
+				m_font.DeleteObject();
+				m_font.CreatePointFont(m_font_size, _T("Arial"));
+
+				CDC* pDC = GetDC();  // 获取设备上下文
+
+				// 获取字符'A'的宽度和高度
+				CSize size = pDC->GetTextExtent(m_text);
+
+				// 输出宽度和高度
+				int charWidth = size.cx * m_font_size / 100;
+				int charHeight = size.cy * m_font_size / 100;
+
+
+				// 绘制一个矩形
+				int left = point.x - charWidth;
+				int top = point.y - charHeight;
+				int right = point.x + charWidth;
+				int bottom = point.y + charHeight;
+
+
+				m_textRect = CRect(left, top, right, bottom);
+				//m_textRect = CRect(50,50,200,100);
+
+				// 绘制文本框
+				if (!m_text.IsEmpty())
+				{
+					CWnd* pWnd = GetDlgItem(IDC_STATIC_PIC);
+					CDC* pDC = pWnd->GetDC();
+					CFont* pOldFont = pDC->SelectObject(&m_font);
+					pDC->SetTextColor(m_font_col);
+					pDC->SetBkMode(TRANSPARENT);
+					pDC->DrawText(m_text, &m_textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					pDC->SelectObject(pOldFont);
+					ReleaseDC(pDC);
+				}
+			}
+			//Invalidate(true); // 触发重绘以显示文本
+		}
+		m_is_text = false;
+	}
+	CDialogEx::OnLButtonDown(nFlags, point);
 }
