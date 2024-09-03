@@ -36,6 +36,9 @@
     <ClInclude Include="CTextInputDialog.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CScaleDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFC_ImageProcessing.cpp">
@@ -48,6 +51,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TextInputDialog.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CScaleDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
