@@ -510,71 +510,35 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 		FilePath = fileDlg.GetPathName();  // 获取文件路径
 		SetDlgItemText(IDC_SAVE_EDIT, FilePath);
 
-		if (!bmpFile.Open(FilePath, CFile::modeCreate | 
-			CFile::modeWrite | CFile::typeBinary)) 
+		//if (m_texted == false) {
+			if (!bmpFile.Open(FilePath, CFile::modeCreate |
+				CFile::modeWrite | CFile::typeBinary))
+			{
+				AfxMessageBox(_T("无法打开文件进行写入"));
+				return;
+			}
+		//}
+
+		// 写入文件头
+		bmpFile.Write(&bmpHeader, sizeof(BITMAPFILEHEADER));
+
+		// 写入信息头
+		bmpFile.Write(&bmpInfo, sizeof(BITMAPINFOHEADER));
+
+		// 计算位图数据大小
+		DWORD bmpDataSize = bmpInfo.biSizeImage;
+		if (bmpDataSize == 0)
 		{
-			AfxMessageBox(_T("无法打开文件进行写入"));
-			return;
+			bmpDataSize = ((bmpInfo.biWidth * bmpInfo.biBitCount
+				+ 31) / 32) * 4 * bmpInfo.biHeight;
 		}
 
-		if (m_texted == false) {
+		// 写入位图数据
+		bmpFile.Write(pBmpData, bmpDataSize);
 
-			// 写入文件头
-			bmpFile.Write(&bmpHeader, sizeof(BITMAPFILEHEADER));
-
-			// 写入信息头
-			bmpFile.Write(&bmpInfo, sizeof(BITMAPINFOHEADER));
-
-			// 计算位图数据大小
-			DWORD bmpDataSize = bmpInfo.biSizeImage;
-			if (bmpDataSize == 0)
-			{
-				bmpDataSize = ((bmpInfo.biWidth * bmpInfo.biBitCount
-					+ 31) / 32) * 4 * bmpInfo.biHeight;
-			}
-
-			// 写入位图数据
-			bmpFile.Write(pBmpData, bmpDataSize);
-
-			// 关闭文件
-			bmpFile.Close();
-		}
-		else {
-			// 获取图片控件的指针
-			CWnd* pWnd = GetDlgItem(IDC_STATIC_PIC);
-
-			// 获取图片控件在屏幕上的矩形区域
-			CRect picRect;
-			pWnd->GetWindowRect(&picRect);
-
-			// 提取左上角坐标和宽高
-			int x = picRect.left;
-			int y = picRect.top;
-			int width = picRect.Width();
-			int height = picRect.Height();
-
-			Sleep(500);
-
-			// 传递给 CaptureScreenRect 函数
-			CaptureScreenRect(x, y, width, height, _T("textsave.bmp"));
-
-			CString path = FilePath;
-			CString name;
-			int lastBackslashPos = path.ReverseFind('\\');
-
-			// 如果找到反斜杠，截取到反斜杠的部分
-			if (lastBackslashPos != -1)
-			{
-				path = path.Left(lastBackslashPos);
-			}
-			CString destPath;
-			destPath.Format(_T("%s\\%s"), path, _T("textsaved.bmp"));
-			MoveFile(_T("textsave.bmp"), destPath);
-
-			CString message;
-			message.Format(_T("图片保存在%s"), destPath);
-			AfxMessageBox(message);
-		}
+		// 关闭文件
+		bmpFile.Close();
+		
 	}
 }
 
@@ -894,24 +858,8 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 
 				Show_Bmp();
 				m_is_open = true;
-
-			//	// 绘制文本框
-			//	if (!m_text.IsEmpty())
-			//	{
-			//		CWnd* pWnd = GetDlgItem(IDC_STATIC_PIC);
-			//		CDC* pDC = pWnd->GetDC();
-			//		CFont* pOldFont = pDC->SelectObject(&m_font);
-			//		pDC->SetTextColor(m_font_col);
-			//		pDC->SetBkMode(TRANSPARENT);
-			//		pDC->DrawText(m_text, &m_textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-			//		pDC->SelectObject(pOldFont);
-			//		ReleaseDC(pDC);
-			//	}
+				bmpFile.Close();
 			}
-			
-
-
-
 		}
 		m_is_text = false;
 	}
