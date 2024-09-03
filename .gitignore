@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# 所有临时 bmp 文件和临时文件夹
+*.bmp
+/Temp
+
 # User-specific files
 *.rsuser
 *.suo
