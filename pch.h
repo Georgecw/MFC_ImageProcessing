@@ -9,5 +9,6 @@
 
 // 添加要在此处预编译的标头
 #include "framework.h"
-
+extern double m_Scale_Height;
+extern double m_Scale_Width;
 #endif //PCH_H

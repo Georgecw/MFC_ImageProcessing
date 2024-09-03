@@ -186,6 +186,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CScaleDlg.h" />
     <ClInclude Include="CTextInputDialog.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MFC_ImageProcessing.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CScaleDlg.cpp" />
     <ClCompile Include="MFC_ImageProcessing.cpp" />
     <ClCompile Include="MFC_ImageProcessingDlg.cpp" />
     <ClCompile Include="pch.cpp">

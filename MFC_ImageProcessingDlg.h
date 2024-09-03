@@ -35,7 +35,9 @@ protected:
 	int m_font_size; //字体大小
 	COLORREF m_font_col;  //字体颜色
 	bool m_is_text = false;  //判断是否为文本框模式
+	bool m_texted = false;  //图片上是否添加过文本
 
+	
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -47,7 +49,6 @@ public:
 	afx_msg void OnClickedOpenButton();
 	afx_msg void OnClickedSaveButton();
 
-	void CMFCImageProcessingDlg::CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath);
 
 	//定义变量存储图片信息
 	BITMAPINFO* pBmpInfo;       //记录图像细节
@@ -60,17 +61,22 @@ public:
 
 	// 显示位图
 	void Show_Bmp(double hfactor,double wfactor);
-	afx_msg void OnBnClickedOk();
+	
 	afx_msg void OnClickedBlurButton();
 	afx_msg void OnClickedSharpButton();
 	void Save_Open_Temp_Bmp();
 	afx_msg void OnClickedScaleButton();
 	void Bmp2Mat(cv::Mat img, int height, int width);
 	void Mat2Bmp(cv::Mat img, int height, int width);
-	double m_Scale_Height;
-	double m_Scale_Width;
+	
 	afx_msg void OnBnClickedTextButton();
 	
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	CListBox m_func_select;
+	afx_msg void OnSelchangeListFunc();
+
+	void CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath, const int font_size, const COLORREF& font_col);
+	void AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col);
+
 };
 
