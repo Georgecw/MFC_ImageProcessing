@@ -858,8 +858,8 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				CSize size = pDC->GetTextExtent(m_text);
 
 				// 输出宽度和高度
-				int charWidth = size.cx * m_font_size / 100;
-				int charHeight = size.cy * m_font_size / 100;
+				int charWidth = (size.cx * m_font_size / 100) / scale;
+				int charHeight = (size.cy * m_font_size / 100) / scale;
 
 
 				// 绘制一个矩形
@@ -875,20 +875,8 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				// 添加文本到图像
 				AddTextToImage(m_text, m_textRect,m_font_size,m_font_col);
 
-				CString path = FilePath;
-				CString name;
-				int lastBackslashPos = path.ReverseFind('\\');
 
-				// 如果找到反斜杠，截取到反斜杠的部分
-				if (lastBackslashPos != -1)
-				{
-					path = path.Left(lastBackslashPos);
-				}
-				CString destPath;
-				destPath.Format(_T("%s\\%s"), path, _T("output.bmp"));
-
-
-				CString BmpName = destPath;
+				CString BmpName = _T(".\\output.bmp");
 				
 				// 读取并显示 BMP 文件
 				if (!bmpFile.Open(BmpName, CFile::modeRead | CFile::typeBinary))
@@ -903,12 +891,9 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
 				pBmpData = new BYTE[Bytes];
 				bmpFile.Read(pBmpData, Bytes);
-				bmpFile.Close();
 
 				Show_Bmp();
 				m_is_open = true;
-
-				AfxMessageBox(_T("文本已添加并保存为 output.bmp"));
 
 			//	// 绘制文本框
 			//	if (!m_text.IsEmpty())
