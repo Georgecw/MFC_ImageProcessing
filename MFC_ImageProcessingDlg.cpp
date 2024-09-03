@@ -706,7 +706,7 @@ void CMFCImageProcessingDlg::CreateTextImage(CString& text, CRect& textRect, con
 	GetEncoderClsid(L"image/bmp", &clsid);
 	bitmap.Save(textImagePath, &clsid, nullptr);
 
-	Gdiplus::GdiplusShutdown(gdiplusToken);
+	//Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
 void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col)
