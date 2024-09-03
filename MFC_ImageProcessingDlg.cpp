@@ -698,7 +698,7 @@ void CMFCImageProcessingDlg::CreateTextImage(CString& text, CRect& textRect, con
 	BYTE green = GetGValue(font_col);
 	BYTE blue = GetBValue(font_col);
 
-	Gdiplus::SolidBrush solidBrush(Gdiplus::Color(255, 0,0,0));
+	Gdiplus::SolidBrush solidBrush(Gdiplus::Color(255, red, green, blue));
 
 	graphics.DrawString(text, -1, &font, pointF, &solidBrush);
 
