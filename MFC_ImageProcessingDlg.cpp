@@ -9,6 +9,7 @@
 #include "framework.h"
 #include "MFC_ImageProcessing.h"
 #include "MFC_ImageProcessingDlg.h"
+#include"toning_func.h"
 #include <gdiplus.h>
 #include <windows.h>
 
@@ -94,6 +95,7 @@ BEGIN_MESSAGE_MAP(CMFCImageProcessingDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_TEXT, &CMFCImageProcessingDlg::OnBnClickedTextButton)
 	ON_WM_LBUTTONDOWN()
 	ON_LBN_SELCHANGE(IDC_LIST_FUNC, &CMFCImageProcessingDlg::OnSelchangeListFunc)
+	ON_WM_HSCROLL()
 END_MESSAGE_MAP()
 
 
@@ -135,6 +137,10 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 	m_func_select.AddString(_T("添加文本框"));
 	m_func_select.AddString(_T("模糊"));
 	m_func_select.AddString(_T("锐化"));
+	m_func_select.AddString(_T("调节饱和度"));
+	m_func_select.AddString(_T("调节曝光"));
+	m_func_select.AddString(_T("调节色温"));
+	m_func_select.AddString(_T("图像分割"));
 
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -707,79 +713,76 @@ void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, cons
 }
 
 
-//饱和度
-void CMFCImageProcessingDlg::AdjustSaturation(Gdiplus::Bitmap* pBitmap, float saturation)
+void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 {
-	using namespace Gdiplus;
-	ImageAttributes imgAttr;
-	ColorMatrix colorMatrix = {
-		0.213f + 0.787f * saturation, 0.715f - 0.715f * saturation, 0.072f - 0.072f * saturation, 0, 0,
-		0.213f - 0.213f * saturation, 0.715f + 0.285f * saturation, 0.072f - 0.072f * saturation, 0, 0,
-		0.213f - 0.213f * saturation, 0.715f - 0.715f * saturation, 0.072f + 0.928f * saturation, 0, 0,
-		0, 0, 0, 1, 0,
-		0, 0, 0, 0, 1
-	};
-	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+	//读取图像
+	// 获取 CString 的缓冲区
+	CT2CA pszConvertedAnsiString(FilePath);
+	// 将缓冲区转换为 std::string
+	std::string str(pszConvertedAnsiString);
+	std::string img_path = str;
+	cv::Mat src = cv::imread(img_path, 1);
+	if (src.empty())
+	{
+		std::cout << "can not load image" << std::endl;
+		return;
+	}
 
-	Graphics graphics(pBitmap);
-	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
+	
+	cv::Mat dst = src.clone();
+
+	int saturation_value = 0;		//[-100, 100]		饱和度。
+	double brightness_value = 1;		//[0,10]			亮度。暗~亮：[0, 1] ~ [1, 10]
+	int warm_value = 0;				//[-100, 100]		暖色调。
+
+	switch(choice){
+	case 1:
+		saturation_value = factor;
+		dst = Saturation(dst, saturation_value);
+		break;
+	case 2:
+		if (factor < 0)
+			brightness_value = - factor / 500.0;
+		else
+			brightness_value = factor / 50.0;   //手动缩小了亮度的调整范围
+		dst = Brightness(dst, brightness_value, 0);
+		break;
+	case 3:
+		warm_value = factor;
+		dst = ColorTemperature(dst, warm_value);
+		break;
+	}
+	
+	// 保存图像
+	std::string output_path = "output_ad.bmp";
+	cv::imwrite(output_path, dst);
+
+	CString BmpName = _T(".\\output_ad.bmp");
+
+	// 读取并显示 BMP 文件
+	if (!bmpFile.Open(BmpName, CFile::modeRead | CFile::typeBinary))
+		return;
+	if (bmpFile.Read(&bmpHeader, sizeof(BITMAPFILEHEADER)) != sizeof(BITMAPFILEHEADER))
+		return;
+	if (bmpFile.Read(&bmpInfo, sizeof(BITMAPINFOHEADER)) != sizeof(BITMAPINFOHEADER))
+		return;
+	pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
+
+	memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
+	DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
+	pBmpData = new BYTE[Bytes];
+	bmpFile.Read(pBmpData, Bytes);
+
+	Show_Bmp();
+	m_is_open = true;
+	bmpFile.Close();
+
+    
 }
 
 
-//对比度
-void CMFCImageProcessingDlg::AdjustContrast(Gdiplus::Bitmap* pBitmap, float contrast)
-{
-	using namespace Gdiplus;
-	ImageAttributes imgAttr;
-	float t = (1.0f - contrast) / 2.0f;
-	ColorMatrix colorMatrix = {
-		contrast, 0, 0, 0, 0,
-		0, contrast, 0, 0, 0,
-		0, 0, contrast, 0, 0,
-		0, 0, 0, 1, 0,
-		t, t, t, 0, 1
-	};
-	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
-
-	Graphics graphics(pBitmap);
-	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
-}
-
-void CMFCImageProcessingDlg::AdjustExposure(Gdiplus::Bitmap* pBitmap, float exposure)
-{
-	using namespace Gdiplus;
-	ImageAttributes imgAttr;
-	ColorMatrix colorMatrix = {
-		exposure, 0, 0, 0, 0,
-		0, exposure, 0, 0, 0,
-		0, 0, exposure, 0, 0,
-		0, 0, 0, 1, 0,
-		0, 0, 0, 0, 1
-	};
-	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
-
-	Graphics graphics(pBitmap);
-	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
-}
 
 
-//色温
-void CMFCImageProcessingDlg::AdjustColorTemperature(Gdiplus::Bitmap* pBitmap, float temperature)
-{
-	using namespace Gdiplus;
-	ImageAttributes imgAttr;
-	ColorMatrix colorMatrix = {
-		1 + temperature, 0, 0, 0, 0,
-		0, 1, 0, 0, 0,
-		0, 0, 1 - temperature, 0, 0,
-		0, 0, 0, 1, 0,
-		0, 0, 0, 0, 1
-	};
-	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
-
-	Graphics graphics(pBitmap);
-	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
-}
 
 
 
@@ -909,29 +912,159 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	CDialogEx::OnLButtonDown(nFlags, point);
 }
 
+void CMFCImageProcessingDlg::OnBnClickedPicseg()
+{
+	// 获取图像宽度和高度
+	int width = bmpInfo.biWidth;
+	int height = bmpInfo.biHeight;
+
+	// 将 BMP 数据转换为 OpenCV 的 cv::Mat 格式
+	cv::Mat img(height, width, CV_8UC3);
+	// 假设位图数据是 BGR 格式
+	Bmp2Mat(img, height, width);
+
+
+	// 将图像数据转换为 k-means 所需的格式
+	cv::Mat samples(img.rows * img.cols, 3, CV_32F);
+	for (int y = 0; y < img.rows; y++)
+	{
+		for (int x = 0; x < img.cols; x++)
+		{
+			cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
+			samples.at<float>(y + x * img.rows, 0) = pixel[0];
+			samples.at<float>(y + x * img.rows, 1) = pixel[1];
+			samples.at<float>(y + x * img.rows, 2) = pixel[2];
+		}
+	}
+
+	// 设置 k-means 算法的参数
+	int clusterCount = 3; // 你可以根据需要调整聚类数量
+	cv::Mat labels;
+	cv::Mat centers;
+	cv::kmeans(samples, clusterCount, labels, cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_PP_CENTERS, centers);
+
+	// 将聚类结果转换回图像格式
+	cv::Mat segmented_image(img.size(), img.type());
+	for (int y = 0; y < img.rows; y++)
+	{
+		for (int x = 0; x < img.cols; x++)
+		{
+			int cluster_idx = labels.at<int>(y + x * img.rows, 0);
+			segmented_image.at<cv::Vec3b>(y, x) = cv::Vec3b(
+				static_cast<uchar>(centers.at<float>(cluster_idx, 0)),
+				static_cast<uchar>(centers.at<float>(cluster_idx, 1)),
+				static_cast<uchar>(centers.at<float>(cluster_idx, 2))
+			);
+		}
+	}
+	// 将 K-means 分割后的图像转换为灰度图
+	cv::Mat gray;
+	cv::cvtColor(segmented_image, gray, cv::COLOR_BGR2GRAY);
+
+	// 使用高斯模糊来减少噪声
+	cv::Mat blurred;
+	cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 1.5);
+
+	// 使用Canny边缘检测器来找到边界
+	double lowThreshold = 30;
+	double highThreshold = 200;
+	int apertureSize = 3;
+	cv::Mat edges;
+	cv::Canny(blurred, edges, lowThreshold, highThreshold, apertureSize);
+
+	// 形态学操作
+	// 创建内核
+	cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)); // 矩形内核，大小3x3
+	cv::Mat dilated;
+	cv::Mat eroded;
+
+	// 进行膨胀操作
+	cv::dilate(edges, dilated, kernel);
+
+	// 进行腐蚀操作
+	cv::erode(dilated, eroded, kernel);
+
+	// 连通域分析
+	std::vector<std::vector<cv::Point>> contours;
+	std::vector<cv::Vec4i> hierarchy;
+	cv::findContours(eroded, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+	cv::Mat connected_edges = cv::Mat::zeros(edges.size(), CV_8UC1);
+	for (const auto& contour : contours) {
+		if (cv::contourArea(contour) > 100) {  // 仅保留较大的连通区域
+			cv::drawContours(connected_edges, std::vector<std::vector<cv::Point>>{contour}, -1, cv::Scalar(255), 1);
+		}
+	}
+
+	// 在处理完成后，仅在 img_copy 上进行边界应用
+	cv::Mat fused_image = img.clone();
+	for (int y = 0; y < img.rows; y++)
+	{
+		for (int x = 0; x < img.cols; x++)
+		{
+			if (edges.at<uchar>(y, x) > 0) // 如果是边界区域
+			{
+				fused_image.at<cv::Vec3b>(y, x) = cv::Vec3b(255, 0, 0); // 设置为红色
+			}
+		}
+	}
+	// 将处理后的图像转换回位图格式
+	Mat2Bmp(fused_image, height, width);
+
+	// 显示图像
+	Show_Bmp();
+}
 
 void CMFCImageProcessingDlg::OnSelchangeListFunc()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	int cur_sel = m_func_select.GetCurSel();
+	cur_sel = m_func_select.GetCurSel();
+
+	if (cur_sel > 4 && cur_sel <8) {
+		CRect rect(700, 629, 900, 669); // 设置滑块控件的位置和大小  802 649
+		m_slider_ad.Create(WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, rect, this, IDC_SLIDER_AD);
+		m_slider_ad.SetRange(0, 100); // 设置滑块控件的范围
+		m_slider_ad.SetTicFreq(5);   // 设置刻度频率
+		m_slider_ad.SetPos(50);       // 设置初始位置
+	}
+
+
 
 	switch (cur_sel)
 	{case 0:  //旋转
 		OnClickedRotation();
 		break;
-	case 1:
+	case 1:  //缩放
 		OnClickedScaleButton();
 		break;
-	case 2:
+	case 2:  //添加文本
 		OnBnClickedTextButton();
 		break;
-	case 3:
+	case 3: //模糊
 		OnClickedBlurButton();
 		break;
-	case 4:
+	case 4: //锐化
 		OnClickedSharpButton();
 		break;
+	case 8:  //图像分割
+		OnBnClickedPicseg();
+		break;
+
+	//调色部分直接滑块条控制
 	default:
 		break;
 	}
+}
+
+
+void CMFCImageProcessingDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar) //调色滑块条
+{
+	 // 确保是 slider 控件发出的消息
+	if (pScrollBar->GetDlgCtrlID() == IDC_SLIDER_AD)
+	{
+		// 获取滑块的当前位置
+		int m_adjust_factor = m_slider_ad.GetPos();
+		AdjustInit(cur_sel - 4, m_adjust_factor);
+	}
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
 }

@@ -31,6 +31,7 @@
 #define IDC_LIST_FUNC                   1019
 #define IDC_SLIDER_B                    1020
 #define IDC_TREE1                       1020
+#define IDC_SLIDER_AD					1021
 
 // Next default values for new objects
 // 

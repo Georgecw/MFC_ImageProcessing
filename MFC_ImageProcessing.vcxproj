@@ -194,6 +194,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="toning_func.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CScaleDlg.cpp" />
@@ -206,6 +207,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TextInputDialog.cpp" />
+    <ClCompile Include="toning_func.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCImageProcessing.rc" />

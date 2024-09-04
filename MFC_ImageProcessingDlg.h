@@ -72,14 +72,23 @@ public:
 	afx_msg void OnBnClickedTextButton();
 	
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+
+	//选择功能
 	CListBox m_func_select;
+	int cur_sel = 0;
 	afx_msg void OnSelchangeListFunc();
 
 	void CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath, const int font_size, const COLORREF& font_col);
 	void AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col);
-	void AdjustSaturation(Gdiplus::Bitmap* pBitmap, float saturation);
-	void AdjustContrast(Gdiplus::Bitmap* pBitmap, float contrast);
-	void AdjustExposure(Gdiplus::Bitmap* pBitmap, float exposure);
-	void AdjustColorTemperature(Gdiplus::Bitmap* pBitmap, float temperature)
+
+	//图像分割
+	void OnBnClickedPicseg();
+	
+	//调色
+	void AdjustInit(int choice,int factor);
+	CSliderCtrl m_slider_ad; // 声明滑块控件
+
+	
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 };
 
