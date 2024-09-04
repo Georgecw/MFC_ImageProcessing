@@ -23,7 +23,7 @@
 #define IDC_EDIT2                       1012
 #define IDC_WIDTH_EDIT                  1012
 #define IDC_BUTTON_TEXT                 1014
-#define IDCANCEL                        1015
+//#define IDCANCEL                        1015
 #define IDC_EDIT_TEXT                   1016
 #define IDC_SLIDER_SIZE                 1017
 #define IDC_SLIDER_G                    1018

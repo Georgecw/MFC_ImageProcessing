@@ -740,6 +740,82 @@ void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, cons
 }
 
 
+//饱和度
+void CMFCImageProcessingDlg::AdjustSaturation(Gdiplus::Bitmap* pBitmap, float saturation)
+{
+	using namespace Gdiplus;
+	ImageAttributes imgAttr;
+	ColorMatrix colorMatrix = {
+		0.213f + 0.787f * saturation, 0.715f - 0.715f * saturation, 0.072f - 0.072f * saturation, 0, 0,
+		0.213f - 0.213f * saturation, 0.715f + 0.285f * saturation, 0.072f - 0.072f * saturation, 0, 0,
+		0.213f - 0.213f * saturation, 0.715f - 0.715f * saturation, 0.072f + 0.928f * saturation, 0, 0,
+		0, 0, 0, 1, 0,
+		0, 0, 0, 0, 1
+	};
+	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+
+	Graphics graphics(pBitmap);
+	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
+}
+
+
+//对比度
+void CMFCImageProcessingDlg::AdjustContrast(Gdiplus::Bitmap* pBitmap, float contrast)
+{
+	using namespace Gdiplus;
+	ImageAttributes imgAttr;
+	float t = (1.0f - contrast) / 2.0f;
+	ColorMatrix colorMatrix = {
+		contrast, 0, 0, 0, 0,
+		0, contrast, 0, 0, 0,
+		0, 0, contrast, 0, 0,
+		0, 0, 0, 1, 0,
+		t, t, t, 0, 1
+	};
+	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+
+	Graphics graphics(pBitmap);
+	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
+}
+
+void CMFCImageProcessingDlg::AdjustExposure(Gdiplus::Bitmap* pBitmap, float exposure)
+{
+	using namespace Gdiplus;
+	ImageAttributes imgAttr;
+	ColorMatrix colorMatrix = {
+		exposure, 0, 0, 0, 0,
+		0, exposure, 0, 0, 0,
+		0, 0, exposure, 0, 0,
+		0, 0, 0, 1, 0,
+		0, 0, 0, 0, 1
+	};
+	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+
+	Graphics graphics(pBitmap);
+	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
+}
+
+
+//色温
+void CMFCImageProcessingDlg::AdjustColorTemperature(Gdiplus::Bitmap* pBitmap, float temperature)
+{
+	using namespace Gdiplus;
+	ImageAttributes imgAttr;
+	ColorMatrix colorMatrix = {
+		1 + temperature, 0, 0, 0, 0,
+		0, 1, 0, 0, 0,
+		0, 0, 1 - temperature, 0, 0,
+		0, 0, 0, 1, 0,
+		0, 0, 0, 0, 1
+	};
+	imgAttr.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+
+	Graphics graphics(pBitmap);
+	graphics.DrawImage(pBitmap, Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()), 0, 0, pBitmap->GetWidth(), pBitmap->GetHeight(), UnitPixel, &imgAttr);
+}
+
+
+
 void CMFCImageProcessingDlg::OnBnClickedTextButton()
 {
 	if (!m_is_open)
@@ -787,7 +863,7 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 
 				// 获取图片控件的矩形区域
 				CRect rect;
-				pWnd->GetClientRect(&rect);
+				pWnd->GetClientRect(&rect);   //556 453
 
 				// 计算宽高比
 				double wid_hei_ratio = (double)bmpInfo.biWidth / (double)bmpInfo.biHeight;
@@ -827,10 +903,10 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 
 
 				// 绘制一个矩形
-				int left = originalX - charWidth;
-				int top = originalY - charHeight;
-				int right = originalX + charWidth;
-				int bottom = originalY + charHeight;
+				int left = originalX - charWidth / 2;
+				int top = originalY - charHeight / 2;
+				int right = originalX + charWidth / 2;
+				int bottom = originalY + charHeight / 2;
 
 
 				m_textRect = CRect(left, top, right, bottom);
@@ -859,6 +935,9 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				Show_Bmp();
 				m_is_open = true;
 				bmpFile.Close();
+			}
+			else {
+				AfxMessageBox(_T("不能点击图片外的区域！"));
 			}
 		}
 		m_is_text = false;
