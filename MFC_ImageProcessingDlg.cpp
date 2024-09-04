@@ -250,9 +250,8 @@ void CMFCImageProcessingDlg::Show_Bmp(double hfactor = 1,double wfactor = 1)
 		return;
 	}
 
-	// 计算每行的填充字节数
-	int rowSize = ((bmpInfo.biWidth * bmpInfo.biBitCount + 31) / 32) * 4;
-	int bmpDataSize = bmpInfo.biHeight * rowSize;
+	// 计算图片尺寸
+	int bmpDataSize = bmpInfo.biHeight * ((bmpInfo.biWidth * bmpInfo.biBitCount + 31) / 32) * 4;
 
 	// 显示位图
 	pDC->SetStretchBltMode(COLORONCOLOR);
@@ -309,7 +308,7 @@ void CMFCImageProcessingDlg::Save_Open_Temp_Bmp()
 	pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 	memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-	DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
+	DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
 	pBmpData = new BYTE[Bytes];
 	bmpFile.Read(pBmpData, Bytes);
 	bmpFile.Close();
@@ -423,7 +422,7 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-			DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
+			DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
 			pBmpData = new BYTE[Bytes];
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
@@ -446,7 +445,7 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-			DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
+			DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
 			pBmpData = new BYTE[Bytes];
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
@@ -523,8 +522,9 @@ void CMFCImageProcessingDlg::OnClickedRotation()
 	int newHeight = width;
 
 	// 分配新的位图数据数组
-	BYTE* pNewBmpData = new BYTE[newWidth * newHeight * (bmpInfo.biBitCount / 8)];
-	memset(pNewBmpData, 0, newWidth * newHeight * (bmpInfo.biBitCount / 8)); // 初始化为 0
+	DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
+	BYTE* pNewBmpData = new BYTE[Bytes];
+	memset(pNewBmpData, 0, Bytes); // 初始化为 0
 
 	// 进行旋转变换
 	for (int y = 0; y < height; y++) 
@@ -676,7 +676,8 @@ void CMFCImageProcessingDlg::CreateTextImage(CString& text, CRect& textRect, con
 	//Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
-void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col)
+void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, 
+	const int font_size, const COLORREF& font_col)
 {
 	// 创建文本图像
 	CString textImagePath = _T("text_image.bmp");
@@ -688,7 +689,8 @@ void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, cons
 
 	// 将文本图像叠加到原始图像上
 	CImage originalImage;
-	originalImage.Attach((HBITMAP)::CreateDIBitmap(::GetDC(NULL), &bmpInfo, CBM_INIT, pBmpData, pBmpInfo, DIB_RGB_COLORS));
+	originalImage.Attach((HBITMAP)::CreateDIBitmap(::GetDC(NULL), &bmpInfo, 
+		CBM_INIT, pBmpData, pBmpInfo, DIB_RGB_COLORS));
 
 	CDC* pDC = CDC::FromHandle(originalImage.GetDC());
 	CDC memDC;
@@ -697,7 +699,8 @@ void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, cons
 	bitmap.Attach(textImage.Detach());
 	CBitmap* pOldBitmap = memDC.SelectObject(&bitmap);
 
-	pDC->TransparentBlt(textRect.left, textRect.top, textRect.Width(), textRect.Height(), &memDC, 0, 0, textRect.Width(), textRect.Height(), RGB(255, 255, 255));
+	pDC->TransparentBlt(textRect.left, textRect.top, textRect.Width(), 
+		textRect.Height(), &memDC, 0, 0, textRect.Width(), textRect.Height(), RGB(255, 255, 255));
 
 	memDC.SelectObject(pOldBitmap);
 	originalImage.ReleaseDC();
@@ -892,7 +895,7 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 				memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-				DWORD Bytes = bmpInfo.biWidth * bmpInfo.biHeight * (bmpInfo.biBitCount / 8);
+				DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
 				pBmpData = new BYTE[Bytes];
 				bmpFile.Read(pBmpData, Bytes);
 
