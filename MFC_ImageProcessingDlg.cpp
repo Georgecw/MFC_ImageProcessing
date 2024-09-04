@@ -3,12 +3,16 @@
 //
 
 #include "pch.h"
+#include "afxdialogex.h"
+#include "CScaleDlg.h"
+#include "CTextInputDialog.h"
 #include "framework.h"
 #include "MFC_ImageProcessing.h"
 #include "MFC_ImageProcessingDlg.h"
-#include "afxdialogex.h"
-#include "CTextInputDialog.h"
-#include"CScaleDlg.h"
+#include <gdiplus.h>
+#include <windows.h>
+
+#pragma comment(lib, "gdiplus.lib")
 
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
@@ -177,9 +181,6 @@ void CMFCImageProcessingDlg::OnPaint()
 	}
 	else
 	{
-		
-		
-		
 		CDialogEx::OnPaint();
 	}
 }
@@ -344,10 +345,7 @@ void CMFCImageProcessingDlg::Mat2Bmp(cv::Mat img, int height, int width)
 	}
 }
 
-
-#include <gdiplus.h>
-#pragma comment(lib, "gdiplus.lib")
-
+// 获取图像编码器的 CLSID
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
 	UINT num = 0;
@@ -375,6 +373,8 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 	return -1;
 }
 
+
+// 将 bmp 文件转换成 jpg, jpeg, png 文件
 void ConvertToBMP(const CString& inputPath, const CString& outputPath)
 {
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
@@ -389,7 +389,9 @@ void ConvertToBMP(const CString& inputPath, const CString& outputPath)
 	//Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
+
 // 控件函数
+
 void CMFCImageProcessingDlg::OnClickedOpenButton()
 {
 	// 设置过滤器
@@ -398,8 +400,6 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 	// 构造打开文件对话框
 	CFileDialog fileDlg(TRUE, _T(".bmp"), NULL,
 		OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, szFilter, this);
-	
-
 
 	// 显示打开文件对话框
 	if (IDOK == fileDlg.DoModal())
@@ -458,35 +458,6 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 }
 
 
-void CaptureScreenRect(int x, int y, int width, int height, LPCTSTR lpszFileName)
-{
-	// 获取屏幕 DC
-	HDC hScreenDC = ::GetDC(NULL);
-	HDC hMemoryDC = ::CreateCompatibleDC(hScreenDC);
-	HBITMAP hBitmap = ::CreateCompatibleBitmap(hScreenDC, width, height);
-	HBITMAP hOldBitmap = (HBITMAP)::SelectObject(hMemoryDC, hBitmap);
-
-	// 截取特定区域
-	::BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, x, y, SRCCOPY);
-
-	// 保存位图文件
-	CImage image;
-	image.Attach(hBitmap);
-	image.Save(lpszFileName, Gdiplus::ImageFormatBMP);
-
-	// 释放资源
-	::SelectObject(hMemoryDC, hOldBitmap);
-	::DeleteObject(hBitmap);
-	::DeleteDC(hMemoryDC);
-	::ReleaseDC(NULL, hScreenDC);
-}
-
-
-
-
-#include<windows.h>
-
-
 void CMFCImageProcessingDlg::OnClickedSaveButton()
 {
 	// TODO: 在此添加控件通知处理程序代码
@@ -510,14 +481,12 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 		FilePath = fileDlg.GetPathName();  // 获取文件路径
 		SetDlgItemText(IDC_SAVE_EDIT, FilePath);
 
-		//if (m_texted == false) {
-			if (!bmpFile.Open(FilePath, CFile::modeCreate |
-				CFile::modeWrite | CFile::typeBinary))
-			{
-				AfxMessageBox(_T("无法打开文件进行写入"));
-				return;
-			}
-		//}
+		if (!bmpFile.Open(FilePath, CFile::modeCreate |
+			CFile::modeWrite | CFile::typeBinary))
+		{
+			AfxMessageBox(_T("无法打开文件进行写入"));
+			return;
+		}
 
 		// 写入文件头
 		bmpFile.Write(&bmpHeader, sizeof(BITMAPFILEHEADER));
@@ -538,9 +507,9 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 
 		// 关闭文件
 		bmpFile.Close();
-		
 	}
 }
+
 
 void CMFCImageProcessingDlg::OnClickedRotation()
 {
@@ -650,8 +619,6 @@ void CMFCImageProcessingDlg::OnClickedScaleButton()
 	if (Dlg.DoModal() == IDOK2) {
 
 		// 2. 用 opencv resize 函数放缩图片
-		
-		
 		if (m_Scale_Height == 0 || m_Scale_Width == 0)
 		{
 			AfxMessageBox(_T("倍数不能为零！"));
@@ -742,6 +709,7 @@ void CMFCImageProcessingDlg::AddTextToImage(CString& text, CRect& textRect, cons
 
 void CMFCImageProcessingDlg::OnBnClickedTextButton()
 {
+	// TODO: 在此添加控件通知处理程序代码
 	if (!m_is_open)
 	{
 		AfxMessageBox(_T("请先打开一张图片"));
@@ -750,11 +718,7 @@ void CMFCImageProcessingDlg::OnBnClickedTextButton()
 	m_is_text = true;
 	m_texted = true;
 	AfxMessageBox(_T("请在图片上点击鼠标左键，选择文本框位置"));
-	// TODO: 在此添加控件通知处理程序代码
 }
-
-
-
 
 
 void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
@@ -866,16 +830,10 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	CDialogEx::OnLButtonDown(nFlags, point);
 }
 
-/*
-m_func_select.AddString(_T("顺时针旋转"));
-	m_func_select.AddString(_T("缩小"));
-	m_func_select.AddString(_T("放大"));
-	m_func_select.AddString(_T("添加文本框"));
-	m_func_select.AddString(_T("模糊"));
-	m_func_select.AddString(_T("锐化"));
-*/
+
 void CMFCImageProcessingDlg::OnSelchangeListFunc()
 {
+	// TODO: 在此添加控件通知处理程序代码
 	int cur_sel = m_func_select.GetCurSel();
 
 	switch (cur_sel)
@@ -897,5 +855,4 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 	default:
 		break;
 	}
-	// TODO: 在此添加控件通知处理程序代码
 }
