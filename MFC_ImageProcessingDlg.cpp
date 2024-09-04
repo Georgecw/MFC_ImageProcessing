@@ -80,6 +80,7 @@ void CMFCImageProcessingDlg::DoDataExchange(CDataExchange* pDX)
 	//DDX_Text(pDX, IDC_HEIGHT_EDIT, m_Scale_Height);
 	//DDX_Text(pDX, IDC_WIDTH_EDIT, m_Scale_Width);
 	DDX_Control(pDX, IDC_LIST_FUNC, m_func_select);
+	DDX_Control(pDX, IDC_PROGRESS1, m_progress);
 }
 
 BEGIN_MESSAGE_MAP(CMFCImageProcessingDlg, CDialogEx)
@@ -142,6 +143,9 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 	m_func_select.AddString(_T("调节色温"));
 	m_func_select.AddString(_T("图像分割"));
 
+	//初始化进度条
+	m_progress.SetRange(0, 100);
+	m_progress.SetStep(1);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -717,10 +721,17 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 {
 	//读取图像
 	// 获取 CString 的缓冲区
-	CT2CA pszConvertedAnsiString(FilePath);
-	// 将缓冲区转换为 std::string
-	std::string str(pszConvertedAnsiString);
-	std::string img_path = str;
+	std::string img_path;
+
+	if (m_slider_created)
+		img_path = "output_ad.bmp";
+	else {
+		CT2CA pszConvertedAnsiString(FilePath);
+		// 将缓冲区转换为 std::string
+		std::string str(pszConvertedAnsiString);
+		img_path = str;
+	}
+	 
 	cv::Mat src = cv::imread(img_path, 1);
 	if (src.empty())
 	{
@@ -735,21 +746,23 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 	double brightness_value = 1;		//[0,10]			亮度。暗~亮：[0, 1] ~ [1, 10]
 	int warm_value = 0;				//[-100, 100]		暖色调。
 
+	m_progress.SetPos(0);
+
 	switch(choice){
 	case 1:
 		saturation_value = factor;
-		dst = Saturation(dst, saturation_value);
+		dst = Saturation(dst, saturation_value,m_progress);
 		break;
 	case 2:
 		if (factor < 0)
 			brightness_value = - factor / 500.0;
 		else
 			brightness_value = factor / 50.0;   //手动缩小了亮度的调整范围
-		dst = Brightness(dst, brightness_value, 0);
+		dst = Brightness(dst, brightness_value, 0,m_progress);
 		break;
 	case 3:
 		warm_value = factor;
-		dst = ColorTemperature(dst, warm_value);
+		dst = ColorTemperature(dst, warm_value,m_progress);
 		break;
 	}
 	
@@ -777,12 +790,9 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 	m_is_open = true;
 	bmpFile.Close();
 
-    
+	m_slider_created = true;
+
 }
-
-
-
-
 
 
 
@@ -917,7 +927,7 @@ void CMFCImageProcessingDlg::OnBnClickedPicseg()
 	// 获取图像宽度和高度
 	int width = bmpInfo.biWidth;
 	int height = bmpInfo.biHeight;
-
+	m_progress.SetPos(5);
 	// 将 BMP 数据转换为 OpenCV 的 cv::Mat 格式
 	cv::Mat img(height, width, CV_8UC3);
 	// 假设位图数据是 BGR 格式
@@ -936,13 +946,14 @@ void CMFCImageProcessingDlg::OnBnClickedPicseg()
 			samples.at<float>(y + x * img.rows, 2) = pixel[2];
 		}
 	}
+	m_progress.SetPos(10);
 
 	// 设置 k-means 算法的参数
 	int clusterCount = 3; // 你可以根据需要调整聚类数量
 	cv::Mat labels;
 	cv::Mat centers;
 	cv::kmeans(samples, clusterCount, labels, cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_PP_CENTERS, centers);
-
+	m_progress.SetPos(30);
 	// 将聚类结果转换回图像格式
 	cv::Mat segmented_image(img.size(), img.type());
 	for (int y = 0; y < img.rows; y++)
@@ -957,21 +968,25 @@ void CMFCImageProcessingDlg::OnBnClickedPicseg()
 			);
 		}
 	}
+
+	m_progress.SetPos(40);
 	// 将 K-means 分割后的图像转换为灰度图
 	cv::Mat gray;
 	cv::cvtColor(segmented_image, gray, cv::COLOR_BGR2GRAY);
 
+	m_progress.SetPos(50);
 	// 使用高斯模糊来减少噪声
 	cv::Mat blurred;
 	cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 1.5);
 
+	m_progress.SetPos(60);
 	// 使用Canny边缘检测器来找到边界
 	double lowThreshold = 30;
 	double highThreshold = 200;
 	int apertureSize = 3;
 	cv::Mat edges;
 	cv::Canny(blurred, edges, lowThreshold, highThreshold, apertureSize);
-
+	m_progress.SetPos(70);
 	// 形态学操作
 	// 创建内核
 	cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)); // 矩形内核，大小3x3
@@ -980,7 +995,7 @@ void CMFCImageProcessingDlg::OnBnClickedPicseg()
 
 	// 进行膨胀操作
 	cv::dilate(edges, dilated, kernel);
-
+	m_progress.SetPos(80);
 	// 进行腐蚀操作
 	cv::erode(dilated, eroded, kernel);
 
@@ -988,14 +1003,14 @@ void CMFCImageProcessingDlg::OnBnClickedPicseg()
 	std::vector<std::vector<cv::Point>> contours;
 	std::vector<cv::Vec4i> hierarchy;
 	cv::findContours(eroded, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
+	
 	cv::Mat connected_edges = cv::Mat::zeros(edges.size(), CV_8UC1);
 	for (const auto& contour : contours) {
 		if (cv::contourArea(contour) > 100) {  // 仅保留较大的连通区域
 			cv::drawContours(connected_edges, std::vector<std::vector<cv::Point>>{contour}, -1, cv::Scalar(255), 1);
 		}
 	}
-
+	m_progress.SetPos(90);
 	// 在处理完成后，仅在 img_copy 上进行边界应用
 	cv::Mat fused_image = img.clone();
 	for (int y = 0; y < img.rows; y++)
@@ -1010,22 +1025,24 @@ void CMFCImageProcessingDlg::OnBnClickedPicseg()
 	}
 	// 将处理后的图像转换回位图格式
 	Mat2Bmp(fused_image, height, width);
-
+	m_progress.SetPos(100);
 	// 显示图像
 	Show_Bmp();
 }
 
 void CMFCImageProcessingDlg::OnSelchangeListFunc()
 {
+		
 	// TODO: 在此添加控件通知处理程序代码
 	cur_sel = m_func_select.GetCurSel();
 
-	if (cur_sel > 4 && cur_sel <8) {
+	if (cur_sel > 4 && cur_sel <8 && m_slider_created==false) {
 		CRect rect(700, 629, 900, 669); // 设置滑块控件的位置和大小  802 649
 		m_slider_ad.Create(WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, rect, this, IDC_SLIDER_AD);
 		m_slider_ad.SetRange(0, 100); // 设置滑块控件的范围
 		m_slider_ad.SetTicFreq(5);   // 设置刻度频率
 		m_slider_ad.SetPos(50);       // 设置初始位置
+		
 	}
 
 
@@ -1065,6 +1082,7 @@ void CMFCImageProcessingDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScr
 		// 获取滑块的当前位置
 		int m_adjust_factor = m_slider_ad.GetPos();
 		AdjustInit(cur_sel - 4, m_adjust_factor);
+		m_slider_ad.SetPos(50);
 	}
 	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
 }
