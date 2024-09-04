@@ -601,7 +601,7 @@ void CMFCImageProcessingDlg::OnClickedBlurButton()
 
 	// 2. 应用高斯模糊
 	cv::Mat blurredImg;
-	cv::GaussianBlur(img, blurredImg, cv::Size(19, 19), 0);
+	cv::GaussianBlur(img, blurredImg, cv::Size(19, 19), 0,0);
 
 	// 3. 将处理后的图像转换回位图格式
 	Mat2Bmp(blurredImg, height, width);
@@ -624,7 +624,7 @@ void CMFCImageProcessingDlg::OnClickedSharpButton()
 
 	// 2. 应用高斯滤波锐化模糊图片
 	cv::Mat SharpenedImg;
-	cv::GaussianBlur(img, SharpenedImg, cv::Size(0, 0), 3);
+	cv::GaussianBlur(img, SharpenedImg, cv::Size(3, 3), 0,0);
 	cv::addWeighted(img, 2, SharpenedImg, -1, 0, SharpenedImg);
 	
 	// 3. 将处理后的图像转换回位图格式

@@ -11,4 +11,7 @@
 #include "framework.h"
 extern double m_Scale_Height;
 extern double m_Scale_Width;
+
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
 #endif //PCH_H

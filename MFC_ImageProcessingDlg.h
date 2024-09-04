@@ -77,6 +77,7 @@ public:
 
 	void CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath, const int font_size, const COLORREF& font_col);
 	void AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col);
+	void BlurBitmap(Gdiplus::Bitmap* pBitmap, int blurSize);
 
 };
 
