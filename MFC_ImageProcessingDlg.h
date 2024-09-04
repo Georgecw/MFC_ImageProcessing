@@ -31,7 +31,9 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	//afx_msg void OnDestroy(); // 清理全局指针
 	DECLARE_MESSAGE_MAP();
+
 public:
 	afx_msg void OnClickedOpenButton();
 	afx_msg void OnClickedSaveButton();
@@ -55,5 +57,17 @@ public:
 	void Mat2Bmp(cv::Mat img, int height, int width);
 	double m_Scale_Height;
 	double m_Scale_Width;
+	afx_msg void OnStnClickedStaticPic();
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	bool ismosaic = 0;
+	afx_msg void OnBnClickedButton1();
+	afx_msg void OnBnClickedButton2();
+	CSliderCtrl nummosaic;
+	afx_msg void OnNMCustomdrawSliderMo(NMHDR* pNMHDR, LRESULT* pResult);
+	CSliderCtrl Slmo;
+	int nummo;
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 };
+
 

@@ -1,7 +1,6 @@
 ﻿
 // MFC_ImageProcessingDlg.cpp: 实现文件
 //
-
 #include "pch.h"
 #include "framework.h"
 #include "MFC_ImageProcessing.h"
@@ -12,7 +11,7 @@
 #define new DEBUG_NEW
 #endif
 
-
+CMFCImageProcessingDlg* Imagepass;
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
@@ -54,6 +53,7 @@ CMFCImageProcessingDlg::CMFCImageProcessingDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFC_IMAGEPROCESSING_DIALOG, pParent)
 	, m_Scale_Height(0)
 	, m_Scale_Width(0)
+	, nummo(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -63,6 +63,8 @@ void CMFCImageProcessingDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_HEIGHT_EDIT, m_Scale_Height);
 	DDX_Text(pDX, IDC_WIDTH_EDIT, m_Scale_Width);
+	DDX_Control(pDX, IDC_SLIDER1, Slmo);
+	DDX_Slider(pDX, IDC_SLIDER1, nummo);
 }
 
 BEGIN_MESSAGE_MAP(CMFCImageProcessingDlg, CDialogEx)
@@ -76,6 +78,13 @@ BEGIN_MESSAGE_MAP(CMFCImageProcessingDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BLUR_BUTTON, &CMFCImageProcessingDlg::OnClickedBlurButton)
 	ON_BN_CLICKED(IDC_SHARP_BUTTON, &CMFCImageProcessingDlg::OnClickedSharpButton)
 	ON_BN_CLICKED(IDC_SCALE_BUTTON, &CMFCImageProcessingDlg::OnClickedScaleButton)
+	ON_WM_LBUTTONDBLCLK()
+	ON_STN_CLICKED(IDC_STATIC_PIC, &CMFCImageProcessingDlg::OnStnClickedStaticPic)
+	ON_WM_LBUTTONUP()
+	ON_WM_LBUTTONDOWN()
+	ON_BN_CLICKED(IDC_BUTTON1, &CMFCImageProcessingDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_BUTTON2, &CMFCImageProcessingDlg::OnBnClickedButton2)
+	ON_WM_HSCROLL()
 END_MESSAGE_MAP()
 
 
@@ -84,6 +93,8 @@ END_MESSAGE_MAP()
 BOOL CMFCImageProcessingDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
+
+	
 
 	// 将“关于...”菜单项添加到系统菜单中。
 
@@ -111,6 +122,16 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+
+	CStatic* pImageControl = (CStatic*)GetDlgItem(IDC_STATIC_PIC);
+
+
+	Slmo.SetRange(15, 50);//设置滑动范围为15-50
+	Slmo.SetTicFreq(5);//每5个单位画一刻度
+	Slmo.SetPos(20);//设置滑块初始位置为20 
+	nummo = 20;
+
+	SetDlgItemInt(IDC_EDIT_MO, 20);//设置编辑框的初始值SetDlgItemInt(IDC_EDIT1, Start);//设置编辑框的初始值
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -424,6 +445,7 @@ void CMFCImageProcessingDlg::OnClickedRotation()
 	int height = bmpInfo.biHeight;
 
 	// 计算新的宽度和高度
+	double wid_hei_ratio = (double)bmpInfo.biWidth / (double)bmpInfo.biHeight;
 	int newWidth = height;
 	int newHeight = width;
 
@@ -551,4 +573,173 @@ void CMFCImageProcessingDlg::OnClickedScaleButton()
 
 	// 4. 显示图像
 	Show_Bmp(m_Scale_Height, m_Scale_Width);
+}
+
+void CMFCImageProcessingDlg::OnStnClickedStaticPic()
+{
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CMFCImageProcessingDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	/*ismosaic = 1;*/
+
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+#ifndef max
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#define _MinDefTmp_
+#endif
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#define _MaxDefTmp_
+#endif
+
+
+
+void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+
+	if (ismosaic) {
+		// 获取图片控件的指针
+		CWnd* pWnd = GetDlgItem(IDC_STATIC_PIC);
+
+		// 获取图片控件的客户区矩形
+		CRect picRect;
+
+		// 获取控件相对于屏幕的位置
+		GetDlgItem(IDC_STATIC_PIC)->GetWindowRect(&picRect);
+
+		//将控件转化为对话框上的相对位置
+		ScreenToClient(picRect);
+
+		//将鼠标位置转换为相对于控件的位置
+		point.x -= picRect.left;
+		point.y -= picRect.top;
+
+		//转换为相对于控件的位置
+		pWnd->GetClientRect(&picRect);
+
+		// 获取控件的宽高
+		int ctrlWidth = picRect.Width();
+		int ctrlHeight = picRect.Height();
+
+		// 计算图像的缩放比例
+		double wid_hei_ratio = (double)bmpInfo.biWidth / (double)bmpInfo.biHeight;
+		double scaleWidth = (double)ctrlWidth / bmpInfo.biWidth;
+		double scaleHeight = (double)ctrlHeight / bmpInfo.biHeight;
+
+		double scaleFactor = min(scaleWidth, scaleHeight);
+
+		int imageWidth = static_cast<int>(bmpInfo.biWidth * scaleFactor);
+		int imageHeight = static_cast<int>(bmpInfo.biHeight * scaleFactor);
+
+		// 确定图像在控件中的位置（居中显示）
+		int xOffset = (ctrlWidth - imageWidth) / 2;
+		int yOffset = (ctrlHeight - imageHeight) / 2;
+
+		// 将鼠标点击点从控件坐标转换为图像坐标
+		int imgX = (point.x - xOffset) / scaleFactor;
+		int imgY = (ctrlHeight - point.y - yOffset) / scaleFactor;
+
+
+		// 确保点击点在图片范围内
+		if (imgX >= 0 && imgX < bmpInfo.biWidth && imgY >= 0 && imgY < bmpInfo.biHeight) {
+			int bpp = bmpInfo.biBitCount / 8; // 每个像素的字节数
+
+			// 计算马赛克区域的边界
+			int mosaicSize = nummo/ scaleFactor; // 设置马赛克的大小
+			int halfSize = mosaicSize / 2;
+			int left = max(imgX - halfSize, 0);
+			int right = min(imgX + halfSize, bmpInfo.biWidth);
+			int top = min(imgY + halfSize, bmpInfo.biHeight);
+			int bottom = max(imgY - halfSize, 0);
+
+			// 计算平均颜色
+			COLORREF avgColor = RGB(0, 0, 0);
+			long totalRed = 0;
+			long totalGreen = 0;
+			long totalBlue = 0;
+			int count = 0;
+
+			for (int j = bottom; j < top; ++j) {
+				for (int i = left; i < right; ++i) {
+					int index = (j * bmpInfo.biWidth + i) * bpp;
+					COLORREF color = *((COLORREF*)(&pBmpData[index]));
+
+					totalRed += GetRValue(color);
+					totalGreen += GetGValue(color);
+					totalBlue += GetBValue(color);
+					++count;
+				}
+			}
+
+			if (count > 0) {
+				avgColor = RGB(totalRed / count, totalGreen / count, totalBlue / count);
+			}
+
+			// 填充马赛克区域
+			for (int j = bottom; j < top; ++j) {
+				for (int i = left; i < right; ++i) {
+					int index = (j * bmpInfo.biWidth + i) * bpp;
+					memcpy(&pBmpData[index], &avgColor, bpp);
+				}
+			}
+
+
+			// 保存并打开临时位图
+			Save_Open_Temp_Bmp();
+
+			// 显示位图
+			Show_Bmp();
+
+		}
+	}
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+
+void CMFCImageProcessingDlg::OnBnClickedButton1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	ismosaic = 1;
+}
+
+
+void CMFCImageProcessingDlg::OnBnClickedButton2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	ismosaic = 0;
+}
+
+
+
+
+
+void CMFCImageProcessingDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (pScrollBar != nullptr)
+	{
+		// 强制转换成CSliderCtrl
+		CSliderCtrl* pSlider = (CSliderCtrl*)pScrollBar;
+		// 根据CSlider控件的ID 来判断是哪一个滚动条
+
+		if (pSlider->GetDlgCtrlID() == IDC_SLIDER1)//对第一个滚动条进行操作
+		{
+			//获取当前位置值，放在变量nummo中
+			nummo = Slmo.GetPos();
+			//内容设置到编辑框中，编辑框的ID是IDC_EDIT_MO
+			SetDlgItemInt(IDC_EDIT_MO, nummo);   //将数值显示到编辑框中
+		}
+	}
+
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
 }
