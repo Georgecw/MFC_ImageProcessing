@@ -56,7 +56,9 @@ public:
 	BITMAPFILEHEADER bmpHeader; //文件头
 	BITMAPINFOHEADER bmpInfo;   //信息头
 	CFile bmpFile;              //记录打开文件
-	CString FilePath;
+	CString FilePath;		    //记录打开文件路径
+	DWORD RowComplete;          //记录每行比特填充的字节数
+	DWORD Bytes;                // 计算位图数据大小
 	afx_msg void OnClickedRotation();
 
 	// 显示位图

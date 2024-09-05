@@ -130,7 +130,7 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	
-	m_func_select.AddString(_T("顺时针旋转"));
+	m_func_select.AddString(_T("顺时针旋转 90 度"));
 	m_func_select.AddString(_T("缩放"));
 	m_func_select.AddString(_T("添加文本框"));
 	m_func_select.AddString(_T("模糊"));
@@ -208,9 +208,10 @@ void CMFCImageProcessingDlg::Show_Bmp(double hfactor = 1,double wfactor = 1)
 	pWnd->GetClientRect(&rect); //获得pictrue控件所在的矩形区域
 
 	// 计算宽高比，使用浮点数避免精度问题
-	double wid_hei_ratio = (double)bmpInfo.biWidth / (double)bmpInfo.biHeight;
 	int image_width = bmpInfo.biWidth;
 	int image_height = bmpInfo.biHeight;
+	double wid_hei_ratio = (double)image_width / (double)image_height;
+	
 
 	// 调整缩略图大小
 	if (rect.Width() < wid_hei_ratio * rect.Height())
@@ -222,7 +223,7 @@ void CMFCImageProcessingDlg::Show_Bmp(double hfactor = 1,double wfactor = 1)
 		}
 		else 
 		{
-			AfxMessageBox(_T("倍数大于一将无法在缩略图中呈现缩放效果"));
+			AfxMessageBox(_T("倍数大于一可能无法在缩略图中呈现缩放效果"));
 			image_width = rect.Width();
 			image_height = static_cast<int>(image_width / wid_hei_ratio);
 		}
@@ -237,7 +238,7 @@ void CMFCImageProcessingDlg::Show_Bmp(double hfactor = 1,double wfactor = 1)
 		}
 		else 
 		{
-			AfxMessageBox(_T("倍数大于一将无法在缩略图中呈现缩放效果"));
+			AfxMessageBox(_T("倍数大于一可能无法在缩略图中呈现缩放效果"));
 			image_height = rect.Height();
 			image_width = static_cast<int>(wid_hei_ratio * image_height);
 		}
@@ -249,9 +250,6 @@ void CMFCImageProcessingDlg::Show_Bmp(double hfactor = 1,double wfactor = 1)
 		AfxMessageBox(_T("宽高为负数！"));
 		return;
 	}
-
-	// 计算图片尺寸
-	int bmpDataSize = bmpInfo.biHeight * ((bmpInfo.biWidth * bmpInfo.biBitCount + 31) / 32) * 4;
 
 	// 显示位图
 	pDC->SetStretchBltMode(COLORONCOLOR);
@@ -292,8 +290,8 @@ void CMFCImageProcessingDlg::Save_Open_Temp_Bmp()
 	DWORD bmpDataSize = bmpInfo.biSizeImage;
 	if (bmpDataSize == 0)
 	{
-		bmpDataSize = ((bmpInfo.biWidth * bmpInfo.biBitCount
-			+ 31) / 32) * 4 * bmpInfo.biHeight;
+		int bpp = bmpInfo.biBitCount / 8;
+		bmpDataSize = (bmpInfo.biWidth * bpp + RowComplete) * bmpInfo.biHeight;
 	}
 	bmpFile.Write(pBmpData, bmpDataSize);
 	bmpFile.Close();
@@ -308,7 +306,7 @@ void CMFCImageProcessingDlg::Save_Open_Temp_Bmp()
 	pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 	memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-	DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
+	Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
 	pBmpData = new BYTE[Bytes];
 	bmpFile.Read(pBmpData, Bytes);
 	bmpFile.Close();
@@ -317,14 +315,17 @@ void CMFCImageProcessingDlg::Save_Open_Temp_Bmp()
 // 将 BGR 编码的位图转换成 OpenCV Mat 格式
 void CMFCImageProcessingDlg::Bmp2Mat(cv::Mat img, int height, int width)
 {
+	int index = 0;
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			int index = (y * width + x) * 3; // 每个像素 3 byte
 			img.at<cv::Vec3b>(y, x)[0] = pBmpData[index + 2]; // B
 			img.at<cv::Vec3b>(y, x)[1] = pBmpData[index + 1]; // G
 			img.at<cv::Vec3b>(y, x)[2] = pBmpData[index];     // R
+			index += 3; // 每个像素 3 byte
+			if ((index + RowComplete) % (width * 3 + RowComplete) == 0)
+				index += RowComplete; // 跳过填充字节
 		}
 	}
 }
@@ -332,14 +333,17 @@ void CMFCImageProcessingDlg::Bmp2Mat(cv::Mat img, int height, int width)
 // 将 OpenCV Mat 格式还原成 BGR 编码的位图文件
 void CMFCImageProcessingDlg::Mat2Bmp(cv::Mat img, int height, int width)
 {
+	int index = 0;
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			int index = (y * width + x) * 3; // 每个像素 3 byte
 			pBmpData[index + 2] = img.at<cv::Vec3b>(y, x)[0]; // B
 			pBmpData[index + 1] = img.at<cv::Vec3b>(y, x)[1]; // G
 			pBmpData[index] = img.at<cv::Vec3b>(y, x)[2];     // R
+			index += 3; // 每个像素 3 byte
+			if ((index + RowComplete) % (width * 3 + RowComplete) == 0)
+				index += RowComplete; // 跳过填充字节
 		}
 	}
 }
@@ -422,8 +426,9 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-			DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
-			pBmpData = new BYTE[Bytes];
+			Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits; // 计算位图数据大小
+			pBmpData = new BYTE[Bytes]; // 分配位图数据数组
+			RowComplete = (4 - ((bmpInfo.biWidth * 3) % 4)) % 4; // 计算每行的比特填充字节数
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
 
@@ -445,8 +450,9 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-			DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
-			pBmpData = new BYTE[Bytes];
+			Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits; // 计算位图数据大小
+			pBmpData = new BYTE[Bytes]; // 分配位图数据数组
+			RowComplete = 4 - ((bmpInfo.biWidth * 3) % 4); // 计算每行的比特填充字节数
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
 
@@ -522,34 +528,53 @@ void CMFCImageProcessingDlg::OnClickedRotation()
 	int newHeight = width;
 
 	// 分配新的位图数据数组
-	DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
+	int bpp = bmpInfo.biBitCount / 8; // 每个像素的字节数
+	DWORD newRowComplete = (4 - ((newWidth * 3) % 4)) % 4; // 计算新的每行的比特填充字节数
+	Bytes = (newWidth * bpp + newRowComplete) * newHeight; // 计算新的图像数据大小
 	BYTE* pNewBmpData = new BYTE[Bytes];
 	memset(pNewBmpData, 0, Bytes); // 初始化为 0
 
-	// 进行旋转变换
+	// 进行像素的旋转变换，注意跳过填充字节
+	int oldIndex = 0;
+	int newIndex = 0;
 	for (int y = 0; y < height; y++) 
 	{
 		for (int x = 0; x < width; x++) 
 		{
 			// 计算新坐标
 			int newX = y;
-			int newY = width-x-1;
+			int newY = width - x - 1;
 
 			// 计算原始和新的数据偏移
-			int oldIndex = static_cast<int>((y * width + x) * (bmpInfo.biBitCount / 8));
-			int newIndex = static_cast<int>((newY * newWidth + newX) * (bmpInfo.biBitCount / 8));
-			memcpy(&pNewBmpData[newIndex], &pBmpData[oldIndex], (bmpInfo.biBitCount / 8)); // 复制像素
+			newIndex = newY * (newWidth * bpp + newRowComplete) + newX * bpp;
+			memcpy(&pNewBmpData[newIndex], &pBmpData[oldIndex], bpp); // 复制像素
+			oldIndex += bpp;
+			if ((oldIndex + RowComplete) % (width * bpp + RowComplete) == 0) 
+				oldIndex += RowComplete; // 跳过填充字节
 		}
 	}
 
+	//补全填充字节
+	int newRowSize = newWidth * bpp + newRowComplete;
+	for (int idx = newWidth * bpp; idx < Bytes; idx += newRowSize)
+	{
+		for (int i = 0; i < newRowComplete; i++)
+			pNewBmpData[idx + i] = 0;
+	}
+
 	// 更新位图信息
+	// 更新信息头
 	bmpInfo.biWidth = newWidth;
 	bmpInfo.biHeight = newHeight;
 	bmpInfo.biSizeImage = newWidth * newHeight * (bmpInfo.biBitCount / 8);
+	RowComplete = newRowComplete;
+	//更新图像数据
 	delete[] pBmpData;
 	pBmpData = pNewBmpData;
-
-	// 保存并打开临时位图
+	// 更新文件头
+	bmpHeader.bfSize = Bytes + bmpHeader.bfOffBits;
+	
+	// 保持并打开新的位图
 	Save_Open_Temp_Bmp();
 
 	// 显示位图
@@ -631,10 +656,14 @@ void CMFCImageProcessingDlg::OnClickedScaleButton()
 		// 更新位图信息
 		int NewWidth = static_cast<int>(width * m_Scale_Width);
 		int NewHeight = static_cast<int>(height * m_Scale_Height);
+		RowComplete = (4 - ((NewWidth * 3) % 4)) % 4;
+		int bpp = bmpInfo.biBitCount / 8;
 		bmpInfo.biWidth = NewWidth;
 		bmpInfo.biHeight = NewHeight;
 		bmpInfo.biSizeImage = NewWidth * NewHeight * (bmpInfo.biBitCount / 8);
-		pBmpData = new BYTE[NewWidth * NewHeight * (bmpInfo.biBitCount / 8)];
+		Bytes = (NewWidth * bpp + RowComplete) * NewHeight;
+		pBmpData = new BYTE[Bytes];
+		bmpHeader.bfSize = Bytes + bmpHeader.bfOffBits;
 
 		// 3. 将处理后的图像转换回位图格式
 		Mat2Bmp(ResizedImg, NewHeight, NewWidth);
@@ -895,7 +924,7 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				pBmpInfo = (BITMAPINFO*)new char[sizeof(BITMAPINFOHEADER)];
 
 				memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
-				DWORD Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
+				Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits;
 				pBmpData = new BYTE[Bytes];
 				bmpFile.Read(pBmpData, Bytes);
 
