@@ -31,9 +31,9 @@ BOOL CTextInputDialog::OnInitDialog()
     CDialogEx::OnInitDialog();  // 或者 CDialog::OnInitDialog()
 
     // 你的初始化代码
-    m_slider_size.SetRange(80, 300);//设置滑动范围为1到20
+    m_slider_size.SetRange(30, 300);//设置滑动范围为1到20
     m_slider_size.SetTicFreq(20);//每1个单位画一刻度
-    m_slider_size.SetPos(150);//设置滑块初始位置为10 
+    m_slider_size.SetPos(80);//设置滑块初始位置为10 
 
     m_silder_R.SetRange(1, 255);//设置滑动范围为1到20
     m_silder_R.SetTicFreq(10);//每1个单位画一刻度

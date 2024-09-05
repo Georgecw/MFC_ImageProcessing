@@ -723,14 +723,12 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 	// 获取 CString 的缓冲区
 	std::string img_path;
 
-	if (m_slider_created)
-		img_path = "output_ad.bmp";
-	else {
-		CT2CA pszConvertedAnsiString(FilePath);
-		// 将缓冲区转换为 std::string
-		std::string str(pszConvertedAnsiString);
-		img_path = str;
-	}
+	
+	CT2CA pszConvertedAnsiString(FilePath);
+	// 将缓冲区转换为 std::string
+	std::string str(pszConvertedAnsiString);
+	img_path = str;
+	
 	 
 	cv::Mat src = cv::imread(img_path, 1);
 	if (src.empty())
@@ -1044,7 +1042,8 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 		m_slider_ad.SetPos(50);       // 设置初始位置
 		
 	}
-
+	if(cur_sel > 4 && cur_sel < 8)
+		m_slider_ad.SetPos(50);       // 设置初始位置
 
 
 	switch (cur_sel)
@@ -1082,7 +1081,7 @@ void CMFCImageProcessingDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScr
 		// 获取滑块的当前位置
 		int m_adjust_factor = m_slider_ad.GetPos();
 		AdjustInit(cur_sel - 4, m_adjust_factor);
-		m_slider_ad.SetPos(50);
+		//m_slider_ad.SetPos(50);
 	}
 	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
 }
