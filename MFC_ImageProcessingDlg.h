@@ -10,20 +10,20 @@
 // CMFCImageProcessingDlg 对话框
 class CMFCImageProcessingDlg : public CDialogEx
 {
-// 构造
+	// 构造
 public:
 	CMFCImageProcessingDlg(CWnd* pParent = nullptr);	// 标准构造函数
 
-// 对话框数据
+	// 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MFC_IMAGEPROCESSING_DIALOG };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
 
-// 实现
+	// 实现
 protected:
 	HICON m_hIcon;
 	bool m_is_open = false; //判断是否打开了图片（鲁棒性）
@@ -37,7 +37,7 @@ protected:
 	bool m_is_text = false;  //判断是否为文本框模式
 	bool m_texted = false;  //图片上是否添加过文本
 
-	
+
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -56,21 +56,23 @@ public:
 	BITMAPFILEHEADER bmpHeader; //文件头
 	BITMAPINFOHEADER bmpInfo;   //信息头
 	CFile bmpFile;              //记录打开文件
-	CString FilePath;
+	CString FilePath;		    //记录打开文件路径
+	DWORD RowComplete;          //记录每行比特填充的字节数
+	DWORD Bytes;                // 计算位图数据大小
 	afx_msg void OnClickedRotation();
 
 	// 显示位图
-	void Show_Bmp(double hfactor,double wfactor);
-	
+	void Show_Bmp(double hfactor, double wfactor);
+
 	afx_msg void OnClickedBlurButton();
 	afx_msg void OnClickedSharpButton();
 	void Save_Open_Temp_Bmp();
 	afx_msg void OnClickedScaleButton();
 	void Bmp2Mat(cv::Mat img, int height, int width);
 	void Mat2Bmp(cv::Mat img, int height, int width);
-	
+
 	afx_msg void OnBnClickedTextButton();
-	
+
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 
 	//选择功能
@@ -80,6 +82,10 @@ public:
 
 	void CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath, const int font_size, const COLORREF& font_col);
 	void AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col);
+	void AdjustSaturation(Gdiplus::Bitmap* pBitmap, float saturation);
+	void AdjustContrast(Gdiplus::Bitmap* pBitmap, float contrast);
+	void AdjustExposure(Gdiplus::Bitmap* pBitmap, float exposure);
+	void AdjustColorTemperature(Gdiplus::Bitmap* pBitmap, float temperature);
 
 	//图像分割
 	void OnBnClickedPicseg();
