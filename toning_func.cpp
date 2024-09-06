@@ -43,8 +43,7 @@ cv::Mat Brightness(cv::Mat src, float brightness, int contrast, CProgressCtrl& p
 				progress.StepIt();
 		}
 	}
-	if (num_pixel % num_step != 0)
-		progress.StepIt();
+	progress.SetPos(100);
 	return dst;
 }
 
@@ -106,8 +105,7 @@ cv::Mat Saturation(cv::Mat src, int saturation,CProgressCtrl&  progress)
 				progress.StepIt();
 		}
 	}
-	if (num_pixel % num_step != 0)
-		progress.StepIt();
+	progress.SetPos(100);
 	return temp;
 }
 
@@ -182,8 +180,7 @@ cv::Mat ColorTemperature(cv::Mat src, int warm, CProgressCtrl& progress)
 				progress.StepIt();
 		}
 	}
-	if (num_pixel % num_step != 0)
-		progress.StepIt();
+	progress.SetPos(100);
 	return result;
 }
 

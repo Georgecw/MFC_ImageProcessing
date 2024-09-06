@@ -97,13 +97,14 @@ public:
 	
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	
-	double m_Scale_Height;
-	double m_Scale_Width;
+	
 	afx_msg void OnStnClickedStaticPic();
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-	bool ismosaic = 0;
 	
+	
+	//马赛克
+	bool ismosaic = 0;
 	CSliderCtrl nummosaic;   
 	int nummo;   //马赛克大小
 	CButton m_mosaic_button;

@@ -70,8 +70,6 @@ END_MESSAGE_MAP()
 
 CMFCImageProcessingDlg::CMFCImageProcessingDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFC_IMAGEPROCESSING_DIALOG, pParent)
-	, m_Scale_Height(0)
-	, m_Scale_Width(0)
 	, nummo(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -163,6 +161,7 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 	//初始化进度条
 	m_progress.SetRange(0, 100);
 	m_progress.SetStep(1);
+	m_progress.SetPos(0);
 
 
 	CStatic* pImageControl = (CStatic*)GetDlgItem(IDC_STATIC_PIC);
@@ -495,6 +494,8 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
 
+			FilePath = tempBmpPath;
+
 			Show_Bmp();
 			m_is_open = true;
 		}
@@ -629,17 +630,17 @@ void CMFCImageProcessingDlg::OnClickedBlurButton()
 	int width = bmpInfo.biWidth;
 	int height = bmpInfo.biHeight;
 	cv::Mat img(height, width, CV_8UC3);
-
+	m_progress.SetPos(0);
 	// 假设位图数据是 BGR 格式
 	Bmp2Mat(img, height, width);
-
+	m_progress.SetPos(40);
 	// 2. 应用高斯模糊
 	cv::Mat blurredImg;
 	cv::GaussianBlur(img, blurredImg, cv::Size(19, 19), 0,0);
-
+	m_progress.SetPos(80);
 	// 3. 将处理后的图像转换回位图格式
 	Mat2Bmp(blurredImg, height, width);
-
+	m_progress.SetPos(100);
 	// 4. 显示图像
 	Show_Bmp();
 }
@@ -652,18 +653,20 @@ void CMFCImageProcessingDlg::OnClickedSharpButton()
 	int width = bmpInfo.biWidth;
 	int height = bmpInfo.biHeight;
 	cv::Mat img(height, width, CV_8UC3);
-
+	m_progress.SetPos(0);
 	// 假设位图数据是 BGR 格式
 	Bmp2Mat(img, height, width);
-
+	m_progress.SetPos(20);
 	// 2. 应用高斯滤波锐化模糊图片
 	cv::Mat SharpenedImg;
 	cv::GaussianBlur(img, SharpenedImg, cv::Size(3, 3), 0,0);
+	m_progress.SetPos(40);
+
 	cv::addWeighted(img, 2, SharpenedImg, -1, 0, SharpenedImg);
-	
+	m_progress.SetPos(60);
 	// 3. 将处理后的图像转换回位图格式
 	Mat2Bmp(SharpenedImg, height, width);
-
+	m_progress.SetPos(100);
 	// 4. 显示图像
 	Show_Bmp();
 }
@@ -937,8 +940,8 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				CSize size = pDC->GetTextExtent(m_text);
 
 				// 输出宽度和高度
-				int charWidth = (size.cx * m_font_size / 100) / scale;
-				int charHeight = (size.cy * m_font_size / 100) / scale;
+				int charWidth = (size.cx * m_font_size / 10) / scale;    //font_size取十分之一为字体大小
+				int charHeight = (size.cy * m_font_size / 10) / scale;
 
 
 				// 绘制一个矩形
