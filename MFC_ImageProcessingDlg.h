@@ -44,7 +44,9 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	//afx_msg void OnDestroy(); // 清理全局指针
 	DECLARE_MESSAGE_MAP();
+
 public:
 	afx_msg void OnClickedOpenButton();
 	afx_msg void OnClickedSaveButton();
@@ -73,8 +75,6 @@ public:
 
 	afx_msg void OnBnClickedTextButton();
 
-	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-
 	//选择功能
 	CListBox m_func_select;
 	int cur_sel = 0;
@@ -82,10 +82,7 @@ public:
 
 	void CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath, const int font_size, const COLORREF& font_col);
 	void AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col);
-	void AdjustSaturation(Gdiplus::Bitmap* pBitmap, float saturation);
-	void AdjustContrast(Gdiplus::Bitmap* pBitmap, float contrast);
-	void AdjustExposure(Gdiplus::Bitmap* pBitmap, float exposure);
-	void AdjustColorTemperature(Gdiplus::Bitmap* pBitmap, float temperature);
+	
 
 	//图像分割
 	void OnBnClickedPicseg();
@@ -100,5 +97,18 @@ public:
 	
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	
+	double m_Scale_Height;
+	double m_Scale_Width;
+	afx_msg void OnStnClickedStaticPic();
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	bool ismosaic = 0;
+	
+	CSliderCtrl nummosaic;   
+	int nummo;   //马赛克大小
+	CButton m_mosaic_button;
+	afx_msg void OnBnClickedButton1();
+	afx_msg void OnBnClickedButton2();
 };
+
 

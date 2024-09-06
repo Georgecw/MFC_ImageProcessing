@@ -22,6 +22,10 @@
 #define IDC_HEIGHT_EDIT                 1011
 #define IDC_EDIT2                       1012
 #define IDC_WIDTH_EDIT                  1012
+#define IDC_BUTTON1                     1015
+#define IDC_BUTTON2                     1016
+#define IDC_EDIT5                       1023
+#define IDC_EDIT_MO                     1025
 #define IDC_BUTTON_TEXT                 1014
 #define IDC_EDIT_TEXT                   1016
 #define IDC_SLIDER_SIZE                 1017
@@ -32,14 +36,17 @@
 #define IDC_TREE1                       1020
 #define IDC_SLIDER_AD                   1021
 #define IDC_PROGRESS1                   1021
+#define IDC_MOSAIC_BUTTON				1022
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_RESOURCE_VALUE        136
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1022
+#define _APS_NEXT_CONTROL_VALUE         1026
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
