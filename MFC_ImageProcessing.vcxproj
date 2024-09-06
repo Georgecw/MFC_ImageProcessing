@@ -191,6 +191,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="MFC_ImageProcessing.h" />
     <ClInclude Include="MFC_ImageProcessingDlg.h" />
+    <ClInclude Include="ParaSet.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
@@ -200,6 +201,7 @@
     <ClCompile Include="CScaleDlg.cpp" />
     <ClCompile Include="MFC_ImageProcessing.cpp" />
     <ClCompile Include="MFC_ImageProcessingDlg.cpp" />
+    <ClCompile Include="ParaSet.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

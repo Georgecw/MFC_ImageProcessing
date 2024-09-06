@@ -5,6 +5,7 @@
 #include "afxdialogex.h"
 #include "CScaleDlg.h"
 #include "CTextInputDialog.h"
+#include "ParaSet.h"
 #include "framework.h"
 #include "MFC_ImageProcessing.h"
 #include "MFC_ImageProcessingDlg.h"
@@ -1081,113 +1082,119 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 }
 
 void CMFCImageProcessingDlg::OnBnClickedPicseg()
-{
-	// 获取图像宽度和高度
-	int width = bmpInfo.biWidth;
-	int height = bmpInfo.biHeight;
-	m_progress.SetPos(5);
-	// 将 BMP 数据转换为 OpenCV 的 cv::Mat 格式
-	cv::Mat img(height, width, CV_8UC3);
-	// 假设位图数据是 BGR 格式
-	Bmp2Mat(img, height, width);
+{   
+	ParaSet para;
+	if (para.DoModal() == IDOK) {
+		;
+		// 获取图像宽度和高度
+		int width = bmpInfo.biWidth;
+		int height = bmpInfo.biHeight;
+		m_progress.SetPos(5);
+		// 将 BMP 数据转换为 OpenCV 的 cv::Mat 格式
+		cv::Mat img(height, width, CV_8UC3);
+		// 假设位图数据是 BGR 格式
+		Bmp2Mat(img, height, width);
 
 
-	// 将图像数据转换为 k-means 所需的格式
-	cv::Mat samples(img.rows * img.cols, 3, CV_32F);
-	for (int y = 0; y < img.rows; y++)
-	{
-		for (int x = 0; x < img.cols; x++)
+		// 将图像数据转换为 k-means 所需的格式
+		cv::Mat samples(img.rows * img.cols, 3, CV_32F);
+		for (int y = 0; y < img.rows; y++)
 		{
-			cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
-			samples.at<float>(y + x * img.rows, 0) = pixel[0];
-			samples.at<float>(y + x * img.rows, 1) = pixel[1];
-			samples.at<float>(y + x * img.rows, 2) = pixel[2];
-		}
-	}
-	m_progress.SetPos(10);
-
-	// 设置 k-means 算法的参数
-	int clusterCount = 3; // 你可以根据需要调整聚类数量
-	cv::Mat labels;
-	cv::Mat centers;
-	cv::kmeans(samples, clusterCount, labels, cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_PP_CENTERS, centers);
-	m_progress.SetPos(30);
-	// 将聚类结果转换回图像格式
-	cv::Mat segmented_image(img.size(), img.type());
-	for (int y = 0; y < img.rows; y++)
-	{
-		for (int x = 0; x < img.cols; x++)
-		{
-			int cluster_idx = labels.at<int>(y + x * img.rows, 0);
-			segmented_image.at<cv::Vec3b>(y, x) = cv::Vec3b(
-				static_cast<uchar>(centers.at<float>(cluster_idx, 0)),
-				static_cast<uchar>(centers.at<float>(cluster_idx, 1)),
-				static_cast<uchar>(centers.at<float>(cluster_idx, 2))
-			);
-		}
-	}
-
-	m_progress.SetPos(40);
-	// 将 K-means 分割后的图像转换为灰度图
-	cv::Mat gray;
-	cv::cvtColor(segmented_image, gray, cv::COLOR_BGR2GRAY);
-
-	m_progress.SetPos(50);
-	// 使用高斯模糊来减少噪声
-	cv::Mat blurred;
-	cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 1.5);
-
-	m_progress.SetPos(60);
-	// 使用Canny边缘检测器来找到边界
-	double lowThreshold = 30;
-	double highThreshold = 200;
-	int apertureSize = 3;
-	cv::Mat edges;
-	cv::Canny(blurred, edges, lowThreshold, highThreshold, apertureSize);
-	m_progress.SetPos(70);
-	// 形态学操作
-	// 创建内核
-	cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)); // 矩形内核，大小3x3
-	cv::Mat dilated;
-	cv::Mat eroded;
-
-	// 进行膨胀操作
-	cv::dilate(edges, dilated, kernel);
-	m_progress.SetPos(80);
-	// 进行腐蚀操作
-	cv::erode(dilated, eroded, kernel);
-
-	// 连通域分析
-	std::vector<std::vector<cv::Point>> contours;
-	std::vector<cv::Vec4i> hierarchy;
-	cv::findContours(eroded, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-	
-	cv::Mat connected_edges = cv::Mat::zeros(edges.size(), CV_8UC1);
-	for (const auto& contour : contours) 
-	{
-		if (cv::contourArea(contour) > 100) {  // 仅保留较大的连通区域
-			cv::drawContours(connected_edges, std::vector<std::vector<cv::Point>>{contour}, -1, cv::Scalar(255), 1);
-		}
-	}
-	m_progress.SetPos(90);
-	// 在处理完成后，仅在 img_copy 上进行边界应用
-	cv::Mat fused_image = img.clone();
-	for (int y = 0; y < img.rows; y++)
-	{
-		for (int x = 0; x < img.cols; x++)
-		{
-			if (edges.at<uchar>(y, x) > 0) // 如果是边界区域
+			for (int x = 0; x < img.cols; x++)
 			{
-				fused_image.at<cv::Vec3b>(y, x) = cv::Vec3b(255, 0, 0); // 设置为红色
+				cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
+				samples.at<float>(y + x * img.rows, 0) = pixel[0];
+				samples.at<float>(y + x * img.rows, 1) = pixel[1];
+				samples.at<float>(y + x * img.rows, 2) = pixel[2];
 			}
 		}
+		m_progress.SetPos(10);
+
+		// 设置 k-means 算法的参数
+		int clusterCount = para.GetPara1(); // 你可以根据需要调整聚类数量
+		cv::Mat labels;
+		cv::Mat centers;
+		cv::kmeans(samples, clusterCount, labels, cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_PP_CENTERS, centers);
+		m_progress.SetPos(30);
+		// 将聚类结果转换回图像格式
+		cv::Mat segmented_image(img.size(), img.type());
+		for (int y = 0; y < img.rows; y++)
+		{
+			for (int x = 0; x < img.cols; x++)
+			{
+				int cluster_idx = labels.at<int>(y + x * img.rows, 0);
+				segmented_image.at<cv::Vec3b>(y, x) = cv::Vec3b(
+					static_cast<uchar>(centers.at<float>(cluster_idx, 0)),
+					static_cast<uchar>(centers.at<float>(cluster_idx, 1)),
+					static_cast<uchar>(centers.at<float>(cluster_idx, 2))
+				);
+			}
+		}
+
+		m_progress.SetPos(40);
+		// 将 K-means 分割后的图像转换为灰度图
+		cv::Mat gray;
+		cv::cvtColor(segmented_image, gray, cv::COLOR_BGR2GRAY);
+
+		m_progress.SetPos(50);
+		// 使用高斯模糊来减少噪声
+		cv::Mat blurred;
+		cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 1.5);
+
+		m_progress.SetPos(60);
+		// 使用Canny边缘检测器来找到边界
+		double lowThreshold = 30;
+		double highThreshold = 200;
+		int apertureSize = 3;
+		cv::Mat edges;
+		cv::Canny(blurred, edges, lowThreshold, highThreshold, apertureSize);
+		m_progress.SetPos(70);
+		// 形态学操作
+		// 创建内核
+		cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)); // 矩形内核，大小3x3
+		cv::Mat dilated;
+		cv::Mat eroded;
+
+		// 进行膨胀操作
+		cv::dilate(edges, dilated, kernel);
+		m_progress.SetPos(80);
+		// 进行腐蚀操作
+		cv::erode(dilated, eroded, kernel);
+
+		// 连通域分析
+		std::vector<std::vector<cv::Point>> contours;
+		std::vector<cv::Vec4i> hierarchy;
+		cv::findContours(eroded, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+		cv::Mat connected_edges = cv::Mat::zeros(edges.size(), CV_8UC1);
+		for (const auto& contour : contours)
+		{
+			if (cv::contourArea(contour) > 100) {  // 仅保留较大的连通区域
+				cv::drawContours(connected_edges, std::vector<std::vector<cv::Point>>{contour}, -1, cv::Scalar(255), 1);
+			}
+		}
+		m_progress.SetPos(90);
+		// 在处理完成后，仅在 img_copy 上进行边界应用
+		cv::Mat fused_image = img.clone();
+		for (int y = 0; y < img.rows; y++)
+		{
+			for (int x = 0; x < img.cols; x++)
+			{
+				if (edges.at<uchar>(y, x) > 0) // 如果是边界区域
+				{
+					fused_image.at<cv::Vec3b>(y, x) = cv::Vec3b(255, 255, 255); // 设置为白色色
+				}
+			}
+		}
+		// 将处理后的图像转换回位图格式
+		Mat2Bmp(fused_image, height, width);
+		m_progress.SetPos(100);
+		// 显示图像
+		Show_Bmp();
 	}
-	// 将处理后的图像转换回位图格式
-	Mat2Bmp(fused_image, height, width);
-	m_progress.SetPos(100);
-	// 显示图像
-	Show_Bmp();
 }
+
+
 
 void CMFCImageProcessingDlg::OnSelchangeListFunc()
 {
@@ -1195,8 +1202,16 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 	// TODO: 在此添加控件通知处理程序代码
 	cur_sel = m_func_select.GetCurSel();
 
-	if (cur_sel > 4 && cur_sel <9 && m_slider_created==false) {
-		CRect rect(700, 629, 900, 669); // 设置滑块控件的位置和大小  802 649
+	// 获取屏幕分辨率
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	int left = 0.243 * screenWidth;
+	int top = 0.388 * screenHeight;
+	int width = 0.0694 * screenWidth;
+	int height = 0.0247 * screenHeight;
+	if (cur_sel > 4 && cur_sel <8 && m_slider_created==false) {
+		CRect rect(left, top, left+width, top+height); // 设置滑块控件的位置和大小  802 649
 		m_slider_ad.Create(WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, rect, this, IDC_SLIDER_AD);
 		m_slider_ad.SetRange(0, 100); // 设置滑块控件的范围
 		m_slider_ad.SetTicFreq(5);   // 设置刻度频率
@@ -1204,7 +1219,7 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 		
 	}
 	else if (cur_sel == 9 && m_slider_created == false) {
-		CRect rect(700, 629, 900, 669); // 设置滑块控件的位置和大小  802 649
+		CRect rect(left, top, left + width, top + height); // 设置滑块控件的位置和大小  802 649
 		m_slider_ad.Create(WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, rect, this, IDC_SLIDER_AD);
 		m_slider_ad.SetRange(0, 100); // 设置滑块控件的范围
 		m_slider_ad.SetTicFreq(5);   // 设置刻度频率
@@ -1213,7 +1228,7 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 	if(cur_sel > 4 && cur_sel < 8 )
 		m_slider_ad.SetPos(50);       // 设置初始位置
 	else if(cur_sel == 9)
-		m_slider_ad.SetPos(14);
+		m_slider_ad.SetPos(14);	   // 设置初始位置
 
 
 	switch (cur_sel)
@@ -1246,7 +1261,7 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 
 	if (cur_sel == 9) {
 		m_mosaic_button.Create(_T("结束马赛克"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-			CRect(750, 700, 900, 760), this, IDC_MOSAIC_BUTTON);
+			CRect(left, top+height+30, left+width, top+height+60), this, IDC_MOSAIC_BUTTON);
 	}
 
 
