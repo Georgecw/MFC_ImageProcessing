@@ -805,25 +805,29 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 	
 	cv::Mat dst = src.clone();
 
-	int saturation_value = 0;		//[-100, 100]		饱和度。
-	double brightness_value = 1;		//[0,10]			亮度。暗~亮：[0, 1] ~ [1, 10]
-	int warm_value = 0;				//[-100, 100]		暖色调。
+	int saturation_value = 0;
+	double brightness_value = 0;
+	int warm_value = 0;
+
 
 	m_progress.SetPos(0);
 
 	switch(choice){
 	case 1:
-		saturation_value = factor;
+		saturation_factor = factor;
+		saturation_value = (factor - 50) * 2;
 		dst = Saturation(dst, saturation_value,m_progress);
 		break;
 	case 2:
-		if (factor < 0)
-			brightness_value = - factor / 500.0;
+		brightness_factor = factor;
+		if (factor < 50)
+			brightness_value = factor / 50.0;
 		else
 			brightness_value = factor / 50.0;   //手动缩小了亮度的调整范围
 		dst = Brightness(dst, brightness_value, 0,m_progress);
 		break;
 	case 3:
+		warmth_factor = factor;
 		warm_value = factor;
 		dst = ColorTemperature(dst, warm_value,m_progress);
 		break;
@@ -855,7 +859,7 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 	m_is_open = true;
 	bmpFile.Close();
 
-	m_slider_created = true;
+	
 
 }
 
@@ -1077,7 +1081,7 @@ void CMFCImageProcessingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 
 			// 显示位图
 			Show_Bmp();
-			m_slider_created = true;
+			
 
 		}
 	}
@@ -1205,34 +1209,45 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 	// TODO: 在此添加控件通知处理程序代码
 	cur_sel = m_func_select.GetCurSel();
 
-	// 获取屏幕分辨率
-	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	CRect dlgRect;
+	GetWindowRect(&dlgRect);
 
-	int left = 0.243 * screenWidth;
-	int top = 0.388 * screenHeight;
-	int width = 0.0694 * screenWidth;
-	int height = 0.0247 * screenHeight;
-	if (cur_sel > 4 && cur_sel <8 && m_slider_created==false) {
-		CRect rect(left, top, left+width, top+height); // 设置滑块控件的位置和大小  802 649
+	int left = 0.7244 * dlgRect.Width();
+	int top = 0.715 * dlgRect.Height();
+	int right = 0.8769 * dlgRect.Width();
+	int bottom = 0.7560 * dlgRect.Height();
+
+	// 销毁之前创建的滑块控件
+	if (m_slider_ad.GetSafeHwnd() != nullptr) {
+		m_slider_ad.DestroyWindow();
+	}
+
+	if (cur_sel > 4 && cur_sel <8 ) {
+		CRect rect(left, top, right, bottom); // 设置滑块控件的位置和大小  802 649
 		m_slider_ad.Create(WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, rect, this, IDC_SLIDER_AD);
 		m_slider_ad.SetRange(0, 100); // 设置滑块控件的范围
 		m_slider_ad.SetTicFreq(5);   // 设置刻度频率
-		m_slider_ad.SetPos(50);       // 设置初始位置
+		switch (cur_sel) {
+		case 5:
+			m_slider_ad.SetPos(saturation_factor);       // 设置初始位置
+			break;
+		case 6:
+			m_slider_ad.SetPos(brightness_factor);       // 设置初始位置
+			break;
+		case 7:		
+			m_slider_ad.SetPos(warmth_factor);       // 设置初始位置
+			break;
+		}
 		
 	}
-	else if (cur_sel == 9 && m_slider_created == false) {
-		CRect rect(left, top, left + width, top + height); // 设置滑块控件的位置和大小  802 649
+	else if (cur_sel == 9 ) {
+		CRect rect(left, top, right, bottom); // 设置滑块控件的位置和大小  802 649
 		m_slider_ad.Create(WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, rect, this, IDC_SLIDER_AD);
 		m_slider_ad.SetRange(0, 100); // 设置滑块控件的范围
 		m_slider_ad.SetTicFreq(5);   // 设置刻度频率
 		m_slider_ad.SetPos(14);       // 设置初始位置
 	}
-	if(cur_sel > 4 && cur_sel < 8 )
-		m_slider_ad.SetPos(50);       // 设置初始位置
-	else if(cur_sel == 9)
-		m_slider_ad.SetPos(14);	   // 设置初始位置
-
+	
 
 	switch (cur_sel)
 	{case 0:  //旋转
@@ -1264,7 +1279,7 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 
 	if (cur_sel == 9) {
 		m_mosaic_button.Create(_T("结束马赛克"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-			CRect(left, top+height+30, left+width, top+height+60), this, IDC_MOSAIC_BUTTON);
+			CRect(left, bottom+30, right, bottom+60), this, IDC_MOSAIC_BUTTON);
 	}
 
 
