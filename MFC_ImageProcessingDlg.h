@@ -90,7 +90,10 @@ public:
 	//调色
 	void AdjustInit(int choice,int factor);
 	CSliderCtrl m_slider_ad; // 声明滑块控件
-	bool m_slider_created = false;	
+	int saturation_factor = 50; // 暂存饱和度滑块位置
+	int brightness_factor = 50; // 暂存亮度滑块位置
+	int warmth_factor = 50; // 暂存暖色滑块位置
+	
 
 	//进度条
 	CProgressCtrl m_progress;
