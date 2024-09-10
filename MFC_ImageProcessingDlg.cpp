@@ -148,7 +148,7 @@ BOOL CMFCImageProcessingDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	
 	m_func_select.AddString(_T("顺时针旋转 90 度"));
-	m_func_select.AddString(_T("缩放"));
+	m_func_select.AddString(_T("缩小"));
 	m_func_select.AddString(_T("添加文本框"));
 	m_func_select.AddString(_T("模糊"));
 	m_func_select.AddString(_T("锐化"));
@@ -435,6 +435,9 @@ void ConvertToBMP(const CString& inputPath, const CString& outputPath)
 
 void CMFCImageProcessingDlg::OnClickedOpenButton()
 {
+	//重置功能
+	Reset();
+
 	// 设置过滤器
 	LPCTSTR szFilter = _T("Image Files (*.bmp;*.jpg;*.jpeg;*.png)|*.bmp;*.jpg;*.jpeg;*.png|");
 
@@ -551,6 +554,23 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 		// 关闭文件
 		bmpFile.Close();
 	}
+}
+
+void CMFCImageProcessingDlg::Reset()
+{
+	saturation_factor = 50; 
+	brightness_factor = 50; 
+	warmth_factor = 50; 
+	// 销毁之前创建的滑块控件
+	if (m_slider_ad.GetSafeHwnd() != nullptr) {
+		m_slider_ad.DestroyWindow();
+	}
+	// 销毁之前创建的按钮控件
+	if (m_mosaic_button.GetSafeHwnd() != nullptr) {
+		ismosaic = false;
+		m_mosaic_button.DestroyWindow();
+	}
+	m_progress.SetPos(0);//重置进度条
 }
 
 
@@ -1216,6 +1236,11 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 	if (m_slider_ad.GetSafeHwnd() != nullptr) {
 		m_slider_ad.DestroyWindow();
 	}
+	// 销毁之前创建的按钮控件
+	if (m_mosaic_button.GetSafeHwnd() != nullptr) {
+		ismosaic = false;
+		m_mosaic_button.DestroyWindow();
+	}
 
 	if (cur_sel > 4 && cur_sel <8 ) {
 		CRect rect(left, top, right, bottom); // 设置滑块控件的位置和大小  802 649
@@ -1276,7 +1301,7 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 		m_mosaic_button.Create(_T("结束马赛克"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 			CRect(left, bottom+30, right, bottom+60), this, IDC_MOSAIC_BUTTON);
 	}
-
+	
 
 }
 
