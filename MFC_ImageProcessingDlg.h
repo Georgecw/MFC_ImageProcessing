@@ -80,8 +80,10 @@ public:
 	int cur_sel = 0;
 	afx_msg void OnSelchangeListFunc();
 
-	void CreateTextImage(CString& text, CRect& textRect, const CString& textImagePath, const int font_size, const COLORREF& font_col);
-	void AddTextToImage(CString& text, CRect& textRect, const int font_size, const COLORREF& font_col);
+	void CreateTextImage(CString& text, CRect& textRect, 
+		const CString& textImagePath, const int font_size, const COLORREF& font_col);
+	void AddTextToImage(CString& text, CRect& textRect, 
+		const int font_size, const COLORREF& font_col);
 	
 
 	//图像分割

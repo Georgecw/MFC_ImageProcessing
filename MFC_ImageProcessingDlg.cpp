@@ -191,7 +191,7 @@ void CMFCImageProcessingDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 }
 
-// 如果向对话框添加最小化按钮，则需要下面的代码
+//  如果向对话框添加最小化按钮，则需要下面的代码
 //  来绘制该图标。  对于使用文档/视图模型的 MFC 应用程序，
 //  这将由框架自动完成。
 
@@ -490,12 +490,10 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
 			Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits; // 计算位图数据大小
 			pBmpData = new BYTE[Bytes]; // 分配位图数据数组
-			RowComplete = 4 - ((bmpInfo.biWidth * 3) % 4); // 计算每行的比特填充字节数
+			RowComplete = (4 - ((bmpInfo.biWidth * 3) % 4)) % 4; // 计算每行的比特填充字节数
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
-
-			FilePath = tempBmpPath;
-
+			
 			Show_Bmp();
 			m_is_open = true;
 		}
@@ -858,9 +856,6 @@ void CMFCImageProcessingDlg::AdjustInit(int choice,int factor)
 	Show_Bmp();
 	m_is_open = true;
 	bmpFile.Close();
-
-	
-
 }
 
 
