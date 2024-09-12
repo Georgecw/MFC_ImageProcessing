@@ -51,8 +51,6 @@ public:
 	afx_msg void OnClickedOpenButton();
 	afx_msg void OnClickedSaveButton();
 
-	void Reset(); // 开新图片时重置
-
 
 	//定义变量存储图片信息
 	BITMAPINFO* pBmpInfo;       //记录图像细节
