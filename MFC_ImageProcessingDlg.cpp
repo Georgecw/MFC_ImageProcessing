@@ -213,8 +213,6 @@ void CMFCImageProcessingDlg::OnPaint()
 
 		// 绘制图标
 		dc.DrawIcon(x, y, m_hIcon);
-
-		
 	}
 	else
 	{
@@ -490,7 +488,8 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
 			Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits; // 计算位图数据大小
 			pBmpData = new BYTE[Bytes]; // 分配位图数据数组
-			RowComplete = (4 - ((bmpInfo.biWidth * 3) % 4)) % 4; // 计算每行的比特填充字节数
+			int bpp = bmpInfo.biBitCount / 8;
+			RowComplete = (4 - ((bmpInfo.biWidth * bpp) % 4)) % 4; // 计算每行的比特填充字节数
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
 			
@@ -538,11 +537,11 @@ void CMFCImageProcessingDlg::OnClickedSaveButton()
 		bmpFile.Write(&bmpInfo, sizeof(BITMAPINFOHEADER));
 
 		// 计算位图数据大小
-		DWORD bmpDataSize = bmpInfo.biSizeImage;
+		int bpp = bmpInfo.biBitCount / 8;
+		DWORD bmpDataSize = bmpHeader.bfSize - bmpHeader.bfOffBits;
 		if (bmpDataSize == 0)
 		{
-			bmpDataSize = ((bmpInfo.biWidth * bmpInfo.biBitCount
-				+ 31) / 32) * 4 * bmpInfo.biHeight;
+			bmpDataSize = ((bmpInfo.biWidth * bpp + RowComplete) * bmpInfo.biHeight);
 		}
 
 		// 写入位图数据
@@ -562,7 +561,6 @@ void CMFCImageProcessingDlg::OnClickedRotation()
 	int height = bmpInfo.biHeight;
 
 	// 计算新的宽度和高度
-	double wid_hei_ratio = (double)bmpInfo.biWidth / (double)bmpInfo.biHeight;
 	int newWidth = height;
 	int newHeight = width;
 
@@ -634,7 +632,7 @@ void CMFCImageProcessingDlg::OnClickedBlurButton()
 	m_progress.SetPos(40);
 	// 2. 应用高斯模糊
 	cv::Mat blurredImg;
-	cv::GaussianBlur(img, blurredImg, cv::Size(19, 19), 0,0);
+	cv::GaussianBlur(img, blurredImg, cv::Size(3, 3), 0,0);
 	m_progress.SetPos(80);
 	// 3. 将处理后的图像转换回位图格式
 	Mat2Bmp(blurredImg, height, width);
@@ -685,6 +683,7 @@ void CMFCImageProcessingDlg::OnClickedScaleButton()
 	if (Dlg.DoModal() == IDOK2) {
 
 		// 2. 用 opencv resize 函数放缩图片
+		UpdateData(TRUE);
 		if (m_Scale_Height == 0 || m_Scale_Width == 0)
 		{
 			AfxMessageBox(_T("倍数不能为零！"));
@@ -697,8 +696,8 @@ void CMFCImageProcessingDlg::OnClickedScaleButton()
 		// 更新位图信息
 		int NewWidth = static_cast<int>(width * m_Scale_Width);
 		int NewHeight = static_cast<int>(height * m_Scale_Height);
-		RowComplete = (4 - ((NewWidth * 3) % 4)) % 4;
 		int bpp = bmpInfo.biBitCount / 8;
+		RowComplete = (4 - ((NewWidth * bpp) % 4)) % 4;
 		bmpInfo.biWidth = NewWidth;
 		bmpInfo.biHeight = NewHeight;
 		bmpInfo.biSizeImage = NewWidth * NewHeight * (bmpInfo.biBitCount / 8);
@@ -1276,8 +1275,6 @@ void CMFCImageProcessingDlg::OnSelchangeListFunc()
 		m_mosaic_button.Create(_T("结束马赛克"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 			CRect(left, bottom+30, right, bottom+60), this, IDC_MOSAIC_BUTTON);
 	}
-
-
 }
 
 
