@@ -464,7 +464,8 @@ void CMFCImageProcessingDlg::OnClickedOpenButton()
 			memcpy(pBmpInfo, &bmpInfo, sizeof(BITMAPINFOHEADER));
 			Bytes = bmpHeader.bfSize - bmpHeader.bfOffBits; // 计算位图数据大小
 			pBmpData = new BYTE[Bytes]; // 分配位图数据数组
-			RowComplete = (4 - ((bmpInfo.biWidth * 3) % 4)) % 4; // 计算每行的比特填充字节数
+			int bpp = bmpInfo.biBitCount / 8;
+			RowComplete = (4 - ((bmpInfo.biWidth * bpp) % 4)) % 4; // 计算每行的比特填充字节数
 			bmpFile.Read(pBmpData, Bytes);
 			bmpFile.Close();
 
